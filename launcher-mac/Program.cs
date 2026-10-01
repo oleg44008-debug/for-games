@@ -1,0 +1,86 @@
+using Avalonia;
+using DustoreLauncherV.Mac.Services;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text.Json;
+
+namespace DustoreLauncherV.Mac;
+
+internal static class Program
+{
+    internal static bool UiSmoke { get; private set; }
+    internal static string? SmokeInputPath { get; private set; }
+    internal static string SmokeReportPath { get; private set; } = "";
+    internal static string SmokeScreenshotPath { get; private set; } = "";
+
+    [STAThread]
+    public static int Main(string[] args)
+    {
+        bool serviceSmoke = args.Contains("--smoke-test");
+        UiSmoke = args.Contains("--ui-smoke");
+        SmokeInputPath = Argument(args, "--smoke-input");
+        if (serviceSmoke || UiSmoke)
+        {
+            SmokeReportPath = Path.GetFullPath(Argument(args, "--smoke-report")
+                ?? Path.Combine(Path.GetTempPath(), "dustore-launcher-mac-" + Guid.NewGuid().ToString("N"), "smoke.json"));
+            // Darwin's standard temporary directory can use the /var alias. Keep the
+            // owned test profile on its physical path without relaxing Core's policy.
+            if (OperatingSystem.IsMacOS() && SmokeReportPath.StartsWith("/var/", StringComparison.Ordinal))
+                SmokeReportPath = "/private" + SmokeReportPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(SmokeReportPath)!);
+            SmokeScreenshotPath = Path.GetFullPath(Argument(args, "--smoke-screenshot") ?? Path.ChangeExtension(SmokeReportPath, ".png"));
+            Directory.CreateDirectory(Path.GetDirectoryName(SmokeScreenshotPath)!);
+            string profile = Path.Combine(Path.GetDirectoryName(SmokeReportPath)!, "profile-" + Guid.NewGuid().ToString("N"));
+            Environment.SetEnvironmentVariable("DUSTOREV_PROFILE_DIRECTORY", profile);
+            try
+            {
+                var report = LauncherSmokeChecks.RunAsync(SmokeInputPath, profile, CancellationToken.None).GetAwaiter().GetResult();
+                if (!report.Success || !OriginalLogoUnchanged())
+                {
+                    WriteReport(new { status = "Fail", mode = "launcher-services", report, originalLogoUnchanged = OriginalLogoUnchanged() });
+                    return 1;
+                }
+                if (serviceSmoke)
+                {
+                    WriteReport(new { status = "Pass", mode = "launcher-services", report,
+                        operatingSystem = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+                        architecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString(),
+                        originalLogoUnchanged = true, verifiedAtUtc = DateTimeOffset.UtcNow });
+                    return 0;
+                }
+            }
+            catch (Exception error)
+            {
+                WriteReport(new { status = "Fail", mode = "launcher-services", error = error.ToString() });
+                return 1;
+            }
+        }
+        try { return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args); }
+        catch (Exception error) when (UiSmoke)
+        {
+            WriteReport(new { status = "Fail", mode = "native-desktop-ui-startup", error = error.ToString() });
+            return 1;
+        }
+    }
+
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace();
+
+    private static string? Argument(string[] args, string name)
+    {
+        int index = Array.IndexOf(args, name);
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
+    }
+
+    internal static void WriteReport(object report)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SmokeReportPath)!);
+        File.WriteAllText(SmokeReportPath, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    internal static bool OriginalLogoUnchanged()
+    {
+        using Stream logo = Assembly.GetExecutingAssembly().GetManifestResourceStream("Dustore.original-logo.png")
+            ?? throw new InvalidOperationException("The original launcher logo is missing.");
+        return Convert.ToHexString(SHA256.HashData(logo)).Equals("69cdb26a75f82302b8f476788a705bbdd6c1ed8d74934e3f05cb4df6a41468d4", StringComparison.OrdinalIgnoreCase);
+    }
+}

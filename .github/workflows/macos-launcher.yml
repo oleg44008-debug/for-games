@@ -1,0 +1,68 @@
+name: DUSTORE Launcher V macOS app
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'launcher-mac/**'
+      - '.github/workflows/macos-launcher.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  macos-launcher:
+    name: Self-contained launcher — ${{ matrix.rid }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            rid: osx-arm64
+          - runner: macos-15-intel
+            rid: osx-x64
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - name: Check out the authorized private validation repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '8.0.x'
+      - name: Check packaging refusals and archive permissions
+        run: python3 -m unittest discover -s launcher-mac/packaging/tests -v
+      - name: Build the native self-contained app and sign inside out
+        run: >-
+          python3 launcher-mac/packaging/build_macos.py
+          --project launcher-mac/DustoreLauncherV.Mac.csproj
+          --converter-core src/DustoreX.AutoConverter.Core/DustoreX.AutoConverter.Core.csproj
+          --rid '${{ matrix.rid }}'
+          --output 'launcher-artifacts/${{ matrix.rid }}'
+      - name: Verify extracted app, native dependencies, persistence, Core and real UI startup
+        run: >-
+          python3 launcher-mac/packaging/verify_macos.py
+          --archive 'launcher-artifacts/${{ matrix.rid }}/DUSTORE-LAUNCHER-V-5.2.0-${{ matrix.rid }}.app.zip'
+          --rid '${{ matrix.rid }}'
+          --smoke-input ci/game/PODIEZD-macOS.zip
+          --output 'launcher-artifacts/${{ matrix.rid }}/verification'
+          --ui-smoke
+      - name: Upload app ZIP, hashes and startup evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DUSTORE-LAUNCHER-V-macOS-${{ matrix.rid }}
+          path: |
+            launcher-artifacts/${{ matrix.rid }}/*.app.zip
+            launcher-artifacts/${{ matrix.rid }}/*.sha256
+            launcher-artifacts/${{ matrix.rid }}/*.json
+            launcher-artifacts/${{ matrix.rid }}/verification/*.json
+            launcher-artifacts/${{ matrix.rid }}/verification/*.log
+            launcher-artifacts/${{ matrix.rid }}/verification/*.png
+          retention-days: 14
+          if-no-files-found: error
