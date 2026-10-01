@@ -32,7 +32,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "e48dae932eb9885ee6f936f466539c8ff4ab2489db46aed5320e92b65464029b"
+      "sha256": "f11dd8beb41881120a9b9eaa3efb2851cfde10e9bff395bd6cbeb4ccb3b8ae3a"
     },
     {
       "path": "Assets/dustore-logo-original.png",
@@ -40,7 +40,7 @@
     },
     {
       "path": "packaging/build_macos.py",
-      "sha256": "0b3bb1022e69bdecd649741b8a6d4614bbfda9b5c3fe739f061c195fc191081d"
+      "sha256": "04920ed0f34fa5efe830a7683f1af7971db013b51a7acf21e04b33737b688152"
     },
     {
       "path": "packaging/DustoreLauncherV.icns",
@@ -56,7 +56,7 @@
     },
     {
       "path": "packaging/verify_macos.py",
-      "sha256": "77791a3105c9d542ddb7c2dc868bbab84512642f6699519c618d9e4eed2dd708"
+      "sha256": "c1f145a0de3088d29752ad07836ec882da248b164a108a981033c88bc4476684"
     },
     {
       "path": "packaging/tests/test_packaging.py",

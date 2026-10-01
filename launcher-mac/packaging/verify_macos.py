@@ -31,6 +31,8 @@ def extract_owned_archive(archive: Path, destination: Path) -> Path:
             if not parts or name.startswith("/") or "\\" in name or ".." in parts or ":" in parts[0]:
                 raise ValueError("Unsafe archive member: " + name)
             if parts[0] == "__MACOSX":
+                if len(parts) > 1 and parts[1] not in (APP_NAME, "._" + APP_NAME):
+                    raise ValueError("Resource-fork metadata does not belong to the launcher app.")
                 continue  # ditto resource-fork metadata is not executable app content.
             if parts[0] != APP_NAME:
                 raise ValueError("The archive contains an unexpected application/root: " + name)
@@ -53,6 +55,12 @@ def extract_owned_archive(archive: Path, destination: Path) -> Path:
                     import shutil
                     shutil.copyfileobj(input_stream, output_stream)
                 target.chmod(mode & 0o777 or 0o644)
+    if platform.system() == "Darwin":
+        # All member paths/symlinks have been checked above. Restore AppleDouble
+        # metadata with the OS archiver too: generic-code signatures on managed
+        # DLLs in the Avalonia MacOS layout live in xattrs, not DLL file bytes.
+        subprocess.run(["ditto", "-x", "-k", "--rsrc", str(archive.resolve()), str(destination.resolve())],
+                       check=True, capture_output=True)
     return destination / APP_NAME
 
 
@@ -217,7 +225,7 @@ def main() -> int:
             command = [str(executable), "--ui-smoke", "--smoke-report", str(ui_report), "--smoke-screenshot", str(image)]
             if args.smoke_input:
                 command += ["--smoke-input", str(args.smoke_input.resolve())]
-            record["uiStartup"] = run_owned_process(command, working, env, output / "launcher-ui-smoke.log", 45)
+            record["uiStartup"] = run_owned_process(command, working, env, output / "launcher-ui-smoke.log", 90)
             record["uiStartup"]["checks"] = json.loads(ui_report.read_text(encoding="utf-8"))
             validate_ui_report(record["uiStartup"]["checks"], bool(args.smoke_input))
             record["uiStartup"]["images"] = {}

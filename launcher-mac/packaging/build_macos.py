@@ -163,6 +163,16 @@ def main() -> int:
     signed = platform.system() == "Darwin"
     if signed:
         executable = contents / "MacOS" / ASSEMBLY_NAME
+        # Apple's codesign treats files inside Contents/MacOS as nested code.
+        # The documented Avalonia manual layout keeps managed DLL/JSON output
+        # beside apphost, so seal those files before signing native binaries and
+        # the bundle. Non-Mach-O seals use xattrs; ditto preserves them in the ZIP.
+        native_set = set(native)
+        resources_in_code = sorted((path for path in (contents / "MacOS").rglob("*")
+                                    if path.is_file() and not path.is_symlink() and path not in native_set),
+                                   key=lambda path: (len(path.parts), str(path)), reverse=True)
+        for path in resources_in_code:
+            run(["codesign", "--force", "--sign", "-", str(path)])
         for path in native:
             command = ["codesign", "--force", "--sign", "-"]
             if path == executable:
