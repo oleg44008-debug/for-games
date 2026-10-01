@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DefineConstants>$(DefineConstants);CORE_ONLY</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/DustoreX.AutoConverter.Core/DustoreX.AutoConverter.Core.csproj" Condition="'$(CoreReferencePath)' == ''" />
+    <Reference Include="DustoreX.AutoConverter.Core" Condition="'$(CoreReferencePath)' != ''"><HintPath>$(CoreReferencePath)</HintPath><Private>true</Private></Reference>
+    <Compile Include="../../SystemChecks/Program.cs" Link="Program.cs" />
+    <Compile Include="../../SystemChecks/CheckSuite.cs" Link="CheckSuite.cs" />
+    <Compile Include="../../ConverterChecks/Fixtures.cs" Link="Fixtures.cs" />
+  </ItemGroup>
+</Project>

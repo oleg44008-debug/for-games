@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>DustoreX.AutoConverter.Core</AssemblyName>
+    <RootNamespace>DustoreX.AutoConverter</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="obj*/**;bin*/**" />
+    <Compile Include="../DustoreX.AutoConverter/Converter.cs" Link="Converter.cs" />
+    <Compile Include="../DustoreX.AutoConverter/GodotPackager.cs" Link="GodotPackager.cs" />
+    <Compile Include="../DustoreX.AutoConverter/NwPackager.cs" Link="NwPackager.cs" />
+    <Compile Include="../DustoreX.AutoConverter/RenPyPackager.cs" Link="RenPyPackager.cs" />
+    <Compile Include="../DustoreX.AutoConverter/EngineSystem.cs" Link="EngineSystem.cs" />
+    <Compile Include="../DustoreX.AutoConverter/RuntimeCatalog.cs" Link="RuntimeCatalog.cs" />
+    <Compile Include="../DustoreX.AutoConverter/CompatibilityPackager.cs" Link="CompatibilityPackager.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "engine": "Godot",
+  "engineVersion": "4.7.1",
+  "target": "Windows x86_64",
+  "sourcePackageFile": "PODIEZD-Windows-roundtrip.zip",
+  "sourcePackageSha256": "7358bc553e3a7db4c04fb0fc0bf8665b6b708cc1e6a3b5a74331fe6366f37d62",
+  "sourcePackageRuntimeSha256": "86409db6200b6f8fd3230989c2d2002851f3dd18acf11d7bdbafddf5a0dd0f72",
+  "runtimeZipFile": "godot-4.7.1-windows-runtime.zip",
+  "runtimeZipSha256": "fa20bfb7cf8508c3f2dbfa3515304388c1cedf321632b4cfc4b29018a7447ab8",
+  "executableSha256": "76269a403bb832599edeee4432a5b7a7e88c018eb5c9c798dfd8289359b0ec07",
+  "files": [
+    "godot-4.7.1-COPYRIGHT.txt",
+    "godot-4.7.1-LICENSE.txt",
+    "godot-license.txt",
+    "version.txt",
+    "windows_release_x86_64.exe"
+  ],
+  "gamePayloadIncluded": false,
+  "method": "Copied matching runtime bytes and license notices from the already produced Windows package; no executable launched",
+  "officialSource": {
+    "url": "https://github.com/godotengine/godot-builds/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz",
+    "sha256": "86409db6200b6f8fd3230989c2d2002851f3dd18acf11d7bdbafddf5a0dd0f72",
+    "officialChecksum": "afcc83d8d3d298038f19c58744a0d660fa75dd4baa33cb55d1011bb2565a2a8c2381728924564cb909e37c205a23f21b521b23bd057993afd43ae4da0b2f9d47",
+    "officialChecksumVerified": true,
+    "version": "4.7.1"
+  }
+}

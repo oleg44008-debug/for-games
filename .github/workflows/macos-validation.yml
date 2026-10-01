@@ -1,0 +1,67 @@
+name: PODIEZD macOS validation
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos-validation:
+    name: Native macOS ${{ matrix.arch }} — Core and PODIEZD
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - name: Check out the private validation repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare evidence directory
+        run: mkdir -p ci/artifacts/core ci/artifacts/macos
+
+      - name: Install matching .NET 8 SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Check validator refusals and owned-process timeout
+        shell: bash
+        run: python3 -m unittest discover -s ci/tests -v 2>&1 | tee ci/artifacts/core/validator-tests.log
+
+      - name: Run all four pure Core regression suites
+        run: python3 ci/run_core_checks.py --artifacts ci/artifacts/core
+
+      - name: Sign a copy, test actual macOS startup, and package back to Windows
+        if: ${{ always() && !cancelled() }}
+        run: >-
+          python3 ci/validate_macos.py
+          --archive ci/game/PODIEZD-macOS.zip
+          --windows-runtime ci/game/godot-4.7.1-windows-runtime.zip
+          --expected-arch '${{ matrix.arch }}'
+          --artifacts ci/artifacts/macos
+
+      - name: Upload reports and logs even after a validation failure
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: PODIEZD-macos-validation-${{ matrix.arch }}
+          path: |
+            ci/artifacts/core/*.json
+            ci/artifacts/core/*.log
+            ci/artifacts/macos/*.json
+            ci/artifacts/macos/*.log
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/artifacts/
+**/__pycache__/
+*.pyc
+.DS_Store
+ci/output/

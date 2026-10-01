@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "workflowName": "PODIEZD macOS validation",
+  "workflowPath": ".github/workflows/macos-validation.yml",
+  "repositoryScope": "Pure conversion Core, linked regression fixtures, actual PODIEZD macOS input and offline matching Windows runtime",
+  "uploadPaths": [
+    ".github/workflows/macos-validation.yml",
+    "src/DustoreX.AutoConverter.Core/DustoreX.AutoConverter.Core.csproj",
+    "src/DustoreX.AutoConverter/Converter.cs",
+    "src/DustoreX.AutoConverter/GodotPackager.cs",
+    "src/DustoreX.AutoConverter/NwPackager.cs",
+    "src/DustoreX.AutoConverter/RenPyPackager.cs",
+    "src/DustoreX.AutoConverter/EngineSystem.cs",
+    "src/DustoreX.AutoConverter/RuntimeCatalog.cs",
+    "src/DustoreX.AutoConverter/CompatibilityPackager.cs",
+    "tests/CoreChecks/Converter/Converter.CoreChecks.csproj",
+    "tests/CoreChecks/Godot/Godot.CoreChecks.csproj",
+    "tests/CoreChecks/Runtime/Runtime.CoreChecks.csproj",
+    "tests/CoreChecks/System/System.CoreChecks.csproj",
+    "tests/ConverterChecks/Program.cs",
+    "tests/ConverterChecks/Fixtures.cs",
+    "tests/GodotChecks/Program.cs",
+    "tests/RuntimeChecks/Program.cs",
+    "tests/SystemChecks/Program.cs",
+    "tests/SystemChecks/CheckSuite.cs",
+    "tools/macos-sign.command",
+    "ci/run_core_checks.py",
+    "ci/validate_macos.py",
+    "ci/prepare_windows_runtime.py",
+    "ci/tests/test_validation.py",
+    "ci/README.md",
+    "ci/source-manifest.json",
+    "ci/game/PODIEZD-macOS.zip",
+    "ci/game/godot-4.7.1-windows-runtime.zip",
+    "ci/game/godot-4.7.1-windows-runtime.provenance.json"
+  ],
+  "exclude": ["bin", "obj", "ci/artifacts", "__pycache__", "publish", "local account data", "WinForms launcher", "browser server"],
+  "macInput": {
+    "path": "ci/game/PODIEZD-macOS.zip",
+    "sha256": "e53f092545e0f15c01b10765b79dce7e9c5f9175c7e7ad57830849811fb4b75a",
+    "payloadSha256": "9b313199d2383715db7a0fb1c9bdee8ddeff67b9f21ddaee84ce7d9a56faee6b",
+    "engineVersion": "4.7.1"
+  },
+  "windowsRuntime": {
+    "path": "ci/game/godot-4.7.1-windows-runtime.zip",
+    "sha256": "fa20bfb7cf8508c3f2dbfa3515304388c1cedf321632b4cfc4b29018a7447ab8",
+    "executableSha256": "76269a403bb832599edeee4432a5b7a7e88c018eb5c9c798dfd8289359b0ec07",
+    "gamePayloadIncluded": false
+  },
+  "actions": {
+    "checkout": {"version": "v7.0.1", "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1"},
+    "setupDotnet": {"version": "v6.0.0", "commit": "a98b56852c35b8e3190ac28c8c2271da59106c68"},
+    "uploadArtifact": {"version": "v7.0.1", "commit": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"}
+  }
+}
