@@ -44,14 +44,15 @@ jobs:
           --converter-core src/DustoreX.AutoConverter.Core/DustoreX.AutoConverter.Core.csproj
           --rid '${{ matrix.rid }}'
           --output 'launcher-artifacts/${{ matrix.rid }}'
-      - name: Verify extracted app, native dependencies, persistence, Core and real UI startup
+      - name: Verify Finder launch, persistent native window, libraries, Core and UI startup
+        shell: bash
         run: >-
           python3 launcher-mac/packaging/verify_macos.py
-          --archive 'launcher-artifacts/${{ matrix.rid }}/DUSTORE-LAUNCHER-V-5.2.0-${{ matrix.rid }}.app.zip'
+          --archive "$(find 'launcher-artifacts/${{ matrix.rid }}' -maxdepth 1 -name '*.app.zip' -print -quit)"
           --rid '${{ matrix.rid }}'
           --smoke-input ci/game/PODIEZD-macOS.zip
           --output 'launcher-artifacts/${{ matrix.rid }}/verification'
-          --ui-smoke
+          --normal-launch --ui-smoke
       - name: Upload app ZIP, hashes and startup evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -64,5 +65,7 @@ jobs:
             launcher-artifacts/${{ matrix.rid }}/verification/*.json
             launcher-artifacts/${{ matrix.rid }}/verification/*.log
             launcher-artifacts/${{ matrix.rid }}/verification/*.png
+            launcher-artifacts/${{ matrix.rid }}/verification/*.ips
+            launcher-artifacts/${{ matrix.rid }}/verification/*.crash
           retention-days: 14
           if-no-files-found: error

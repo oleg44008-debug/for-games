@@ -12,6 +12,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from build_macos import APP_NAME, ASSEMBLY_NAME, macho_architectures, zip_bundle
 from verify_macos import extract_owned_archive, inspect_dependencies, inspect_rendered_image, run_owned_process, validate_service_report, validate_ui_report
+from macho_minimums import inspect_macho, version_tuple
 
 
 class PackagingBoundaryChecks(unittest.TestCase):
@@ -122,6 +123,26 @@ class PackagingBoundaryChecks(unittest.TestCase):
                 report = inspect_dependencies(bundle, "osx-arm64")
             self.assertEqual(report[0]["dependencies"], ["/usr/lib/libSystem.B.dylib"])
             self.assertEqual(report[0]["installName"], "/usr/local/lib/libAvalonia.Native.OSX.dylib")
+
+    def test_deployment_minimum_uses_selected_universal_slice(self):
+        def image(cpu, minimum):
+            header = b"\xcf\xfa\xed\xfe" + struct.pack("<IIIIIII", cpu, 0, 6, 1, 24, 0, 0)
+            return header + struct.pack("<IIIIII", 0x32, 24, 1, minimum, 0x1A0000, 0)
+        intel = image(0x01000007, 0x000A0F00)
+        arm = image(0x0100000C, 0x000B0000)
+        offset = 48
+        universal = b"\xca\xfe\xba\xbe" + struct.pack(">I", 2)
+        universal += struct.pack(">IIIII", 0x01000007, 0, offset, len(intel), 0)
+        universal += struct.pack(">IIIII", 0x0100000C, 0, offset + len(intel), len(arm), 0)
+        universal += intel + arm
+        self.assertEqual(inspect_macho(universal, "x64")["minimumOS"], "10.15.0")
+        self.assertEqual(inspect_macho(universal, "arm64")["minimumOS"], "11.0.0")
+        self.assertLess(version_tuple("10.15"), version_tuple("11.0"))
+
+    def test_invalid_native_load_command_does_not_claim_old_os_compatibility(self):
+        header = b"\xcf\xfa\xed\xfe" + struct.pack("<IIIIIII", 0x01000007, 0, 6, 1, 8, 0, 0)
+        with self.assertRaises(ValueError):
+            inspect_macho(header + struct.pack("<II", 0x32, 99999), "x64")
 
 
 if __name__ == "__main__":

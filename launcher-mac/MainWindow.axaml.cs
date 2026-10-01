@@ -22,7 +22,7 @@ public partial class MainWindow : Window
         AvaloniaXamlLoader.Load(this);
         ViewModel = new MainViewModel();
         DataContext = ViewModel;
-        Opened += async (_, _) => await InitializeAsync();
+        Opened += OnOpened;
         Closing += OnClosing;
         KeyDown += OnKeyDown;
     }
@@ -30,6 +30,20 @@ public partial class MainWindow : Window
     public MainViewModel ViewModel { get; }
 
     public Task InitializeAsync() => _initializeTask ??= ViewModel.InitializeAsync();
+
+    private async void OnOpened(object? sender, EventArgs args)
+    {
+        try
+        {
+            await InitializeAsync();
+            if (IsVisible) StartupDiagnostics.RecordReady(this);
+        }
+        catch (Exception error)
+        {
+            ViewModel.ReportError(error);
+            StartupDiagnostics.RecordFailure(error);
+        }
+    }
 
     private async Task<string?> PickFileAsync(string title, bool gamesOnly = true)
     {

@@ -109,7 +109,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string LaunchHint => SelectedGame is null ? "" : SelectedGame.CanLaunch ? "Приложение откроется обычным способом macOS." : "Для Windows-сборки сначала создайте macOS-пакет через eX. Для неизвестного формата нужен готовый Mac-порт.";
 
     public string Section { get => _section; set { if (Set(ref _section, value)) { Notify(nameof(IsLibrary)); Notify(nameof(IsEx)); Notify(nameof(IsSettings)); } } }
-    public string Search { get => _search; set { if (Set(ref _search, value)) ApplyFilter(); } }
+    public string Search { get => _search; set { if (Set(ref _search, value ?? "")) ApplyFilter(); } }
     public string SourcePath { get => _source; set { if (Set(ref _source, value)) { ResultPath = ""; ResetPlan(); } } }
     public string GameName { get => _gameName; set { if (Set(ref _gameName, value)) UpdateActions(); } }
     public string OutputPath { get => _output; set { if (Set(ref _output, value)) UpdateActions(); } }
@@ -124,7 +124,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool CanChooseArchitecture => IsMacTarget && !IsBusy;
     public GameItemViewModel? SelectedGame { get => _selectedGame; set { if (Set(ref _selectedGame, value)) { foreach (string property in new[] { nameof(HasSelection), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus), nameof(SelectedAdded), nameof(SelectedLastPlayed), nameof(LaunchHint) }) Notify(property); UpdateActions(); } } }
 
-    public Task InitializeAsync() => PerformAsync("Загружаю библиотеку…", ReloadLibraryAsync);
+    public Task InitializeAsync() => PerformAsync("Загружаю библиотеку…", async cancellation =>
+    {
+        await ReloadLibraryAsync(cancellation);
+        Status = _entries.Count == 0
+            ? "Библиотека готова. Добавьте игру или выберите исходную сборку в eX."
+            : "Библиотека готова.";
+    });
 
     public async Task ImportGameAsync(string path)
     {

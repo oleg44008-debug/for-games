@@ -18,6 +18,7 @@ internal static class Program
     {
         bool serviceSmoke = args.Contains("--smoke-test");
         UiSmoke = args.Contains("--ui-smoke");
+        StartupDiagnostics.Begin(serviceSmoke ? "services-smoke" : UiSmoke ? "ui-smoke" : "normal");
         SmokeInputPath = Argument(args, "--smoke-input");
         if (serviceSmoke || UiSmoke)
         {
@@ -56,14 +57,27 @@ internal static class Program
             }
         }
         try { return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args); }
-        catch (Exception error) when (UiSmoke)
+        catch (Exception error)
         {
-            WriteReport(new { status = "Fail", mode = "native-desktop-ui-startup", error = error.ToString() });
+            StartupDiagnostics.RecordFailure(error);
+            if (UiSmoke)
+                WriteReport(new { status = "Fail", mode = "native-desktop-ui-startup", error = error.ToString() });
             return 1;
         }
     }
 
-    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace();
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        var builder = AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace();
+        // The launcher draws a small 2D interface. Avoid a native OpenGL driver
+        // initialization on older Intel Macs; game processes keep their own renderer.
+        if (OperatingSystem.IsMacOS())
+            builder.With(new AvaloniaNativePlatformOptions
+            {
+                RenderingMode = new[] { AvaloniaNativeRenderingMode.Software }
+            });
+        return builder;
+    }
 
     private static string? Argument(string[] args, string name)
     {

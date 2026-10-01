@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
@@ -10,13 +11,27 @@ namespace DustoreLauncherV.Mac;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        Dispatcher.UIThread.UnhandledException += (_, args) => StartupDiagnostics.RecordFailure(args.Exception);
+        StartupDiagnostics.RecordFrameworkInitialized();
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var window = new MainWindow();
+            MainWindow window;
+            try { window = new MainWindow(); }
+            catch (Exception error)
+            {
+                StartupDiagnostics.RecordFailure(error);
+                if (Program.UiSmoke) throw;
+                desktop.MainWindow = CreateStartupFailureWindow(error);
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
             desktop.MainWindow = window;
             if (Program.UiSmoke)
                 window.Opened += async (_, _) =>
@@ -80,5 +95,31 @@ public partial class App : Application
                 };
         }
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static Window CreateStartupFailureWindow(Exception error)
+    {
+        var window = new Window
+        {
+            Title = "Ошибка запуска DUSTORE LAUNCHER V", Width = 640, Height = 390,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen
+        };
+        var panel = new StackPanel { Margin = new Thickness(24), Spacing = 16 };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Не удалось загрузить лаунчер. Подробности сохранены в журнале.",
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap, FontSize = 18
+        });
+        panel.Children.Add(new TextBox
+        {
+            Text = error.Message + "\n\nЖурнал: " + StartupDiagnostics.LogPath,
+            IsReadOnly = true, AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            Height = 180
+        });
+        var close = new Button { Content = "Закрыть", Padding = new Thickness(16, 8) };
+        close.Click += (_, _) => window.Close();
+        panel.Children.Add(close);
+        window.Content = panel;
+        return window;
     }
 }

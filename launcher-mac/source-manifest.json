@@ -1,6 +1,6 @@
 {
   "product": "DUSTORE LAUNCHER V macOS",
-  "version": "5.2.0",
+  "version": "5.2.1",
   "files": [
     {
       "path": "App.axaml",
@@ -8,11 +8,11 @@
     },
     {
       "path": "App.axaml.cs",
-      "sha256": "a41845a7791e9c76f8b03a89574059df9b354458cdb1b26f504fac9d8ec28d7a"
+      "sha256": "3ae590b328f17b9091034cad7729b849192fa165753b3e6434d8aecc3f51fc04"
     },
     {
       "path": "DustoreLauncherV.Mac.csproj",
-      "sha256": "49d41add4b57ad97700425f7d40b9554c50f2b7acea7b99a130229cb2da1e602"
+      "sha256": "83ae3875aaee3301335c1d39e2c33a08602be20b3f9d515076205fb38f1ea096"
     },
     {
       "path": "MainWindow.axaml",
@@ -20,19 +20,23 @@
     },
     {
       "path": "MainWindow.axaml.cs",
-      "sha256": "eac459bf73c8bab2f3701afdf03e480dc92b6103ec748140d5fed53305aa3eff"
+      "sha256": "7ada45f008a7e9ecc925e8e4ab03dc0b7be767eb70ab668f8e6487487057fd42"
     },
     {
       "path": "prepare-ci.ps1",
-      "sha256": "626f78dda9705fae9bb470188aef7b9e6fb85e07c210fff62e350ea68d21dc61"
+      "sha256": "bc56a1e29fb78736f98434fb59f9824e97244f008b1f372f3b05e631e1c9752b"
     },
     {
       "path": "Program.cs",
-      "sha256": "4f0e67e79fb687d99b352d203af9d2fbbf31345763a38c3e8c5fd79b7d04768b"
+      "sha256": "3d2faba63f101b82da4a4410b6e3c67e932497419997b5fddd644995e5d8ce43"
     },
     {
       "path": "README.md",
-      "sha256": "f11dd8beb41881120a9b9eaa3efb2851cfde10e9bff395bd6cbeb4ccb3b8ae3a"
+      "sha256": "62866bcaefd19a48e15d77a1670ac17e16836f4cd841d0612032fc0f4970e656"
+    },
+    {
+      "path": "StartupDiagnostics.cs",
+      "sha256": "b2eccadfdded4fa603e1aac49cc835853fd3655877ccc6b0afefb337704b646a"
     },
     {
       "path": "Assets/dustore-logo-original.png",
@@ -40,7 +44,7 @@
     },
     {
       "path": "packaging/build_macos.py",
-      "sha256": "04920ed0f34fa5efe830a7683f1af7971db013b51a7acf21e04b33737b688152"
+      "sha256": "a235fc4bcddffa265ae6f89f6e8bd221272907c9d0e3efb0ad4d67ab4da8e2e5"
     },
     {
       "path": "packaging/DustoreLauncherV.icns",
@@ -51,16 +55,24 @@
       "sha256": "b43515a84c79bc0b584d0553809d6bd140304261953610711a59c86b57f9e9a6"
     },
     {
+      "path": "packaging/macho_minimums.py",
+      "sha256": "a7a63aadd93362d6aadbea00d10b6854c8ae1a6284ed22b1b0b4ac15d12f409a"
+    },
+    {
       "path": "packaging/make_icon.py",
       "sha256": "a1ae2c45e61cf3ef6811b3896fb76cc36c35f21d414650f1a16b5bf1bbfbb57a"
     },
     {
+      "path": "packaging/observe_launchservices.swift",
+      "sha256": "563d92c5c7fa081f27d329f1ff6c6edb544595722e5e95cd138863ddd3d5891c"
+    },
+    {
       "path": "packaging/verify_macos.py",
-      "sha256": "53aaeebf5c59745908a9ce324f5d915212302dde90b955d5234939f327ccf52f"
+      "sha256": "deff7c67a475d2a2056d889b06a1d0e79868a5941f359064d721828ff0233139"
     },
     {
       "path": "packaging/tests/test_packaging.py",
-      "sha256": "61e474c6f31510f3526523c728cd21d1fb13cfb506411d54d89d5a3cb2a568ae"
+      "sha256": "e1b560a6db5878158e8bc362def291c7f3aeda032856ea48d6772feebe3e529f"
     },
     {
       "path": "Services/GameEntry.cs",
@@ -68,11 +80,11 @@
     },
     {
       "path": "Services/LauncherServices.cs",
-      "sha256": "a87c3ba4b24009b6b925bcb47f569f915e169f9b4c10f29e762d81c933612538"
+      "sha256": "f1986f4b3b61fa1212186686738cc852208e9313d328fa0f291178c4e7be75e2"
     },
     {
       "path": "Services/LauncherSmokeChecks.cs",
-      "sha256": "06f634a8385c3eaf45501e8dcde9a8cc335ababa1459aae586197b9d4854a330"
+      "sha256": "9261e99437e46c93393dc4027226e14b4148d989b38d5c4743db8886c6d14c82"
     },
     {
       "path": "Services/MacLocalSigner.cs",
@@ -92,8 +104,8 @@
     },
     {
       "path": "ViewModels/MainViewModel.cs",
-      "sha256": "3d220f14bae73809748991aa37f72fa7d7e4b00a6c918597e607796249bc2b4e"
+      "sha256": "1b77e1d96315b4a39602d24c0df2b32ed48255c3fd02009e9c323a629e00909b"
     }
   ],
-  "workflowSha256": "c5c04cd568a066538a7796c452cf2d0f2849d4c23fd552e7f0b38cf014a216d4"
+  "workflowSha256": "8fb5ea22d3b5513715d41e733266d69d88293876313d1e538569fa2ac6ca03a3"
 }

@@ -9,7 +9,7 @@ $taskManifest = @()
 foreach ($taskSourceFile in Get-ChildItem -LiteralPath $taskMacSource -File -Recurse -Force) {
     $taskRelative = [IO.Path]::GetRelativePath($taskMacSource, $taskSourceFile.FullName)
     $taskSegments = $taskRelative.Split([char[]]'\/')
-    if ($taskSegments[0] -in @('bin', 'obj', 'artifacts', 'publish', '.github', '.git') -or $taskSegments -contains '__pycache__' -or $taskSourceFile.Extension -eq '.pyc') { continue }
+    if ($taskSegments[0] -in @('bin', 'obj', 'artifacts', 'publish', 'delivery', '.github', '.git') -or $taskSourceFile.Name -in @('download-artifact.py', 'validate-release.py') -or $taskSegments -contains '__pycache__' -or $taskSourceFile.Extension -eq '.pyc') { continue }
     $taskDestination = [IO.Path]::GetFullPath((Join-Path $taskMacMirror $taskRelative))
     if (!$taskDestination.StartsWith($taskMirrorPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'A mirror file escaped the new launcher directory.' }
     [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($taskDestination)) | Out-Null
@@ -23,7 +23,8 @@ foreach ($taskSourceFile in Get-ChildItem -LiteralPath $taskMacSource -File -Rec
 $taskWorkflowSource = Join-Path $taskMacSource '.github/workflows/macos-launcher.yml'
 $taskWorkflowDestination = Join-Path $taskCiRoot '.github/workflows/macos-launcher.yml'
 [IO.File]::Copy($taskWorkflowSource, $taskWorkflowDestination, $true)
-[ordered]@{ product = 'DUSTORE LAUNCHER V macOS'; version = '5.2.0'; files = $taskManifest; workflowSha256 = (Get-FileHash -LiteralPath $taskWorkflowSource -Algorithm SHA256).Hash.ToLowerInvariant() } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $taskMacMirror 'source-manifest.json') -Encoding utf8
+$taskProjectXml = [xml][IO.File]::ReadAllText((Join-Path $taskMacSource 'DustoreLauncherV.Mac.csproj'))
+[ordered]@{ product = 'DUSTORE LAUNCHER V macOS'; version = [string]$taskProjectXml.Project.PropertyGroup.Version; files = $taskManifest; workflowSha256 = (Get-FileHash -LiteralPath $taskWorkflowSource -Algorithm SHA256).Hash.ToLowerInvariant() } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $taskMacMirror 'source-manifest.json') -Encoding utf8
 $taskAttributesPath = Join-Path $taskCiRoot '.gitattributes'
 $taskAttributes = [IO.File]::ReadAllText($taskAttributesPath)
 foreach ($taskAttribute in @('*.axaml text eol=lf', '*.icns binary', '*.png binary')) {

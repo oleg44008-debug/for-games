@@ -17,6 +17,7 @@ import uuid
 import zipfile
 
 from build_macos import APP_NAME, ASSEMBLY_NAME, native_files, sha256, validate_bundle
+from macho_minimums import audit_archive, version_tuple
 
 
 def extract_owned_archive(archive: Path, destination: Path) -> Path:
@@ -175,6 +176,53 @@ def inspect_rendered_image(image: Path, output: Path) -> dict:
     return {"file": image.name, "width": width, "height": height, "sha256": sha256(image)}
 
 
+def observe_normal_launch(bundle: Path, output: Path, version: str) -> dict:
+    helper = output / "observe-launchservices"
+    swift_source = Path(__file__).resolve().parent / "observe_launchservices.swift"
+    compiled = subprocess.run(["xcrun", "swiftc", "-parse-as-library", "-O", "-framework", "AppKit", "-framework", "CoreGraphics",
+                               str(swift_source), "-o", str(helper)], capture_output=True, text=True, timeout=120)
+    (output / "launchservices-compile.log").write_text(compiled.stdout + compiled.stderr, encoding="utf-8")
+    compiled.check_returncode()
+    startup = Path.home() / "Library" / "Logs" / "DUSTORE Launcher V" / "last-startup.json"
+    report_path = output / "launcher-normal-startup.json"
+    env = os.environ.copy()
+    for key in list(env):
+        if key.startswith("DUSTOREV_") or key == "DOTNET_ROOT" or key.startswith("DOTNET_ROOT_"):
+            env.pop(key, None)
+    started = time.time()
+    result = {}
+    try:
+        result = run_owned_process([str(helper), str(bundle), str(report_path), str(startup), version],
+                                   output, env, output / "launcher-normal-startup.log", 90)
+        observation = json.loads(report_path.read_text(encoding="utf-8"))
+        if observation.get("status") != "passed" or observation.get("smokeBranch") is not False or len(observation.get("samples", [])) < 3:
+            raise ValueError("Normal LaunchServices startup did not preserve a real window.")
+        result["observation"] = observation
+        return result
+    finally:
+        # Preserve the actual normal-startup report and crash evidence even when
+        # the observer fails. Reports from unrelated installed apps are excluded.
+        process_id = None
+        if startup.is_file() and startup.stat().st_mtime >= started:
+            try:
+                diagnostic = json.loads(startup.read_text(encoding="utf-8"))
+                actual_base = Path(diagnostic.get("applicationBaseDirectory", "")).resolve()
+                expected_base = (bundle / "Contents" / "MacOS").resolve()
+                if actual_base == expected_base:
+                    (output / "normal-app-last-startup.json").write_text(json.dumps(diagnostic, indent=2), encoding="utf-8")
+                    process_id = diagnostic.get("processId")
+            except (ValueError, OSError):
+                pass
+        crashes = Path.home() / "Library" / "Logs" / "DiagnosticReports"
+        if crashes.is_dir():
+            for path in crashes.glob(ASSEMBLY_NAME + "*"):
+                if not path.is_file() or path.stat().st_mtime < started or path.stat().st_size > 10_000_000:
+                    continue
+                text = path.read_text(encoding="utf-8", errors="replace")
+                if str(bundle) in text or (process_id and (f'"pid" : {process_id}' in text or f'"pid":{process_id}' in text)):
+                    (output / ("owned-crash-" + path.name)).write_text(text, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, required=True)
@@ -182,12 +230,13 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--smoke-input", type=Path)
     parser.add_argument("--ui-smoke", action="store_true")
+    parser.add_argument("--normal-launch", action="store_true", help="Require real LaunchServices open with default arguments/profile and a persistent native window.")
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     record = {"status": "failed", "archive": str(args.archive.resolve()), "runtimeIdentifier": args.rid,
               "host": {"os": platform.system(), "architecture": platform.machine(), "version": platform.mac_ver()[0]},
-              "scope": "Actual launcher startup in owned temporary profiles; no downloaded game is launched. UI image is the initialized Avalonia client rendered by the app, not a gameplay or live click test."}
+              "scope": "Actual normal LaunchServices startup uses the default profile when requested; smoke checks use owned temporary profiles. No downloaded game is launched. UI image is the initialized Avalonia client rendered by the app, not a gameplay or live click test."}
     try:
         if platform.system() != "Darwin":
             raise RuntimeError("Native startup verification must run on macOS, not a Windows cross-build.")
@@ -195,6 +244,9 @@ def main() -> int:
         if platform.machine() != expected:
             raise RuntimeError("Use a native runner matching the deliverable architecture.")
         record["archiveSha256"] = sha256(args.archive)
+        record["nativeDeploymentTargets"] = audit_archive(args.archive, args.rid)
+        if version_tuple(record["nativeDeploymentTargets"]["maximumNativeMinimumOS"]) > version_tuple(record["nativeDeploymentTargets"]["bundleMinimumOS"]):
+            raise ValueError("The bundle declares support below its actual native deployment target.")
         bundle = extract_owned_archive(args.archive.resolve(), output / ("extracted-" + uuid.uuid4().hex))
         record["structure"] = validate_bundle(bundle, args.rid)
         executable = bundle / "Contents" / "MacOS" / ASSEMBLY_NAME
@@ -213,6 +265,12 @@ def main() -> int:
         icon = bundle / "Contents" / "Resources" / "DustoreLauncherV.icns"
         subprocess.run(["iconutil", "-c", "iconset", str(icon), "-o", str(output / "validated-icon.iconset")], check=True, capture_output=True)
         record["nativeIconDecoded"] = True
+        assessment = subprocess.run(["spctl", "--assess", "--type", "execute", "--verbose=4", str(bundle)], capture_output=True, text=True)
+        (output / "gatekeeper-assessment.log").write_text(assessment.stdout + assessment.stderr, encoding="utf-8")
+        record["gatekeeperAssessment"] = {"exitCode": assessment.returncode, "notarized": False,
+                                         "scope": "Advisory assessment only. No policies or quarantine attributes are changed."}
+        if args.normal_launch:
+            record["normalStartup"] = observe_normal_launch(bundle, output, record["structure"]["metadata"]["CFBundleShortVersionString"])
         profile = output / ("profile-" + uuid.uuid4().hex)
         profile.mkdir()
         working = output / "foreign-working-directory"

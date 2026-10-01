@@ -10,16 +10,33 @@ public sealed class LauncherServices
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly SemaphoreSlim _libraryGate = new(1, 1);
     private readonly IPlatformLauncher _platform;
+    private readonly Exception? _profileResolutionError;
     private List<GameEntry>? _entries;
 
     public LauncherServices(string? profileDirectory = null, IPlatformLauncher? platform = null)
     {
         _platform = platform ?? new PlatformLauncher();
-        DataDirectory = Path.GetFullPath(profileDirectory ?? Environment.GetEnvironmentVariable("DUSTOREV_PROFILE_DIRECTORY") ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DUSTORE Launcher V"));
-        OutputDirectory = Path.Combine(DataDirectory, "Converted");
-        ManagedGamesDirectory = Path.Combine(DataDirectory, "Managed Games");
-        Directory.CreateDirectory(DataDirectory);
+        try
+        {
+            string? selectedProfile = profileDirectory ?? Environment.GetEnvironmentVariable("DUSTOREV_PROFILE_DIRECTORY");
+            if (selectedProfile is null)
+            {
+                string applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                if (string.IsNullOrWhiteSpace(applicationData)) throw new ArgumentException("Система не предоставила папку Application Support для профиля.");
+                selectedProfile = Path.Combine(applicationData, "DUSTORE Launcher V");
+            }
+            if (string.IsNullOrWhiteSpace(selectedProfile)) throw new ArgumentException("Путь профиля не задан.");
+            DataDirectory = Path.GetFullPath(selectedProfile);
+            OutputDirectory = Path.Combine(DataDirectory, "Converted");
+            ManagedGamesDirectory = Path.Combine(DataDirectory, "Managed Games");
+        }
+        catch (Exception error) when (error is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            // The window can still open and display the profile error during async initialization.
+            // A malformed override never falls back to another profile or writes into the working directory.
+            _profileResolutionError = error;
+            DataDirectory = OutputDirectory = ManagedGamesDirectory = "";
+        }
     }
 
     public string DataDirectory { get; }
@@ -92,6 +109,7 @@ public sealed class LauncherServices
 
     public async Task<PackageResult> ConvertAsync(ConversionRequest request, IProgress<string>? progress = null, CancellationToken cancellation = default)
     {
+        EnsureProfileDirectory();
         // The core enforces source preservation, runtime verification, archive limits and separate outputs.
         // Its packaging stage is atomic but not interruptible after writing starts: retain a completed result.
         request = request with { OutputPath = request.OutputPath ?? NewOutputPath(request.Name, request.Target) };
@@ -100,6 +118,7 @@ public sealed class LauncherServices
 
     public string NewOutputPath(string gameName, TargetPlatform target)
     {
+        ThrowProfileResolutionError();
         string name = string.IsNullOrWhiteSpace(gameName) ? "Game" : gameName.Trim();
         foreach (char value in Path.GetInvalidFileNameChars().Concat(new[] { '/', '\\', ':' }).Distinct()) name = name.Replace(value, '_');
         name = name.Trim('.', ' ');
@@ -111,6 +130,7 @@ public sealed class LauncherServices
 
     public async Task<GameEntry> PrepareConvertedMacAsync(Guid id, PackageResult result, CancellationToken cancellation = default)
     {
+        EnsureProfileDirectory();
         string output = ExistingPath(result.OutputPath);
         // Validate every archive path and symlink before extracting, including manually selected ZIPs.
         string? app = await Task.Run(() => MacPackageImporter.ImportIfMacApp(output,
@@ -172,6 +192,7 @@ public sealed class LauncherServices
 
     private async Task EnsureLoadedAsync(CancellationToken cancellation)
     {
+        EnsureProfileDirectory();
         if (_entries is not null) return;
         if (!File.Exists(LibraryPath)) { _entries = []; return; }
         if (new FileInfo(LibraryPath).Length > 8 * 1024 * 1024) throw new InvalidDataException("Файл библиотеки слишком велик.");
@@ -189,6 +210,7 @@ public sealed class LauncherServices
 
     private async Task SaveAsync(CancellationToken cancellation)
     {
+        EnsureProfileDirectory();
         string temporary = Path.Combine(DataDirectory, "library-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
@@ -205,6 +227,23 @@ public sealed class LauncherServices
         path = Path.GetFullPath(path);
         if (!File.Exists(path) && !Directory.Exists(path)) throw new FileNotFoundException("Файл или папка игры не найдены.", path);
         return path;
+    }
+
+    private void EnsureProfileDirectory()
+    {
+        ThrowProfileResolutionError();
+        try { Directory.CreateDirectory(DataDirectory); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException("Не удалось открыть папку профиля лаунчера: " + DataDirectory + ". " + error.Message, error);
+        }
+    }
+
+    private void ThrowProfileResolutionError()
+    {
+        if (_profileResolutionError is not null)
+            throw new InvalidDataException("Не удалось определить папку профиля лаунчера. Проверьте DUSTOREV_PROFILE_DIRECTORY: " + _profileResolutionError.Message,
+                _profileResolutionError);
     }
 
     private static bool PathEquals(string left, string right) => string.Equals(Path.GetFullPath(left), Path.GetFullPath(right),

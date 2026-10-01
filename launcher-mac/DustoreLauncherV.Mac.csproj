@@ -9,7 +9,7 @@
     <Product>DUSTORE LAUNCHER V</Product>
     <AssemblyTitle>DUSTORE LAUNCHER V for macOS</AssemblyTitle>
     <Company>eXepc</Company>
-    <Version>5.2.0</Version>
+    <Version>5.2.1</Version>
     <UseAppHost>true</UseAppHost>
     <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>

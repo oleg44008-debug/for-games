@@ -20,6 +20,7 @@ import subprocess
 import uuid
 import xml.etree.ElementTree as ET
 import zipfile
+from macho_minimums import inspect_macho, version_tuple
 
 APP_NAME = "DUSTORE LAUNCHER V.app"
 ASSEMBLY_NAME = "DustoreLauncherV.Mac"
@@ -154,7 +155,15 @@ def main() -> int:
     metadata = {"CFBundleExecutable": ASSEMBLY_NAME, "CFBundleName": "DUSTORE V", "CFBundleDisplayName": "DUSTORE LAUNCHER V",
                 "CFBundleIdentifier": "io.dustore.launcher.v", "CFBundleVersion": version, "CFBundleShortVersionString": version,
                 "CFBundleIconFile": "DustoreLauncherV.icns", "CFBundleInfoDictionaryVersion": "6.0", "CFBundlePackageType": "APPL",
-                "NSHighResolutionCapable": True, "LSMinimumSystemVersion": "12.0"}
+                "NSHighResolutionCapable": True, "LSMinimumSystemVersion": {"osx-x64": "10.15", "osx-arm64": "11.0"}[args.rid]}
+    minimum_records = []
+    for path in native_files(bundle):
+        minimum_record = inspect_macho(path.read_bytes(), {"osx-x64": "x64", "osx-arm64": "arm64"}[args.rid])
+        if not minimum_record or not minimum_record["minimumOS"]:
+            raise ValueError("A native component has no auditable macOS deployment minimum: " + str(path))
+        if version_tuple(minimum_record["minimumOS"]) > version_tuple(metadata["LSMinimumSystemVersion"]):
+            raise ValueError("A native component requires newer macOS than the bundle declares: " + str(path))
+        minimum_records.append({"path": str(path.relative_to(bundle)), **minimum_record})
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(metadata, stream, fmt=plistlib.FMT_XML, sort_keys=False)
     native = native_files(bundle)
@@ -182,6 +191,8 @@ def main() -> int:
              str(packaging / "launcher.entitlements"), str(bundle)])
         run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(bundle)])
     report = validate_bundle(bundle, args.rid)
+    report["nativeDeploymentTargets"] = minimum_records
+    report["compatibilityScope"] = "Intel targets Catalina 10.15+, Apple Silicon Big Sur 11+. Embedded native minima are audited; older untested operating systems are not runtime-verified by this package report."
     report["signing"] = {"adHoc": signed, "developerId": False, "notarized": False}
     archive = output / f"DUSTORE-LAUNCHER-V-{version}-{args.rid}.app.zip"
     if signed:

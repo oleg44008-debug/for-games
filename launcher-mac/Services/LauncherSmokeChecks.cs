@@ -26,6 +26,37 @@ public static class LauncherSmokeChecks
             var service = new LauncherServices(profileDirectory, fakePlatform);
             string fixtures = Path.Combine(profileDirectory, "smoke-fixtures-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(fixtures);
+            string emptyProfile = Path.Combine(fixtures, "empty-startup-profile");
+            var emptyService = new LauncherServices(emptyProfile, fakePlatform);
+            Check(!Directory.Exists(emptyProfile), "service construction performs no profile filesystem writes before the GUI");
+            Check((await emptyService.LoadLibraryAsync(cancellation).ConfigureAwait(false)).Count == 0
+                && Directory.Exists(emptyProfile), "an empty profile is created and loaded during async initialization");
+            string blockedProfile = Path.Combine(fixtures, "blocked-profile-file");
+            File.WriteAllText(blockedProfile, "Existing file must stay unchanged.");
+            string blockedHash = HashSource(blockedProfile);
+            var blockedService = new LauncherServices(blockedProfile, fakePlatform);
+            await MustThrowAsync<IOException>(() => blockedService.LoadLibraryAsync(cancellation));
+            Check(HashSource(blockedProfile) == blockedHash, "profile file collisions become async initialization errors without changing the file");
+            var blockedParentService = new LauncherServices(Path.Combine(blockedProfile, "child"), fakePlatform);
+            await MustThrowAsync<IOException>(() => blockedParentService.LoadLibraryAsync(cancellation));
+            Check(HashSource(blockedProfile) == blockedHash, "an unwritable profile under a file parent is rejected after construction without changing data");
+            var blankProfileService = new LauncherServices("", fakePlatform);
+            await MustThrowAsync<InvalidDataException>(() => blankProfileService.LoadLibraryAsync(cancellation));
+            Check(blankProfileService.DataDirectory == "" && blankProfileService.OutputDirectory == "", "a blank profile override surfaces an async error without falling back to another profile");
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())
+            {
+                string restrictedParent = Path.Combine(fixtures, "permission-restricted-profile");
+                Directory.CreateDirectory(restrictedParent);
+                UnixFileMode prior = File.GetUnixFileMode(restrictedParent);
+                try
+                {
+                    File.SetUnixFileMode(restrictedParent, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                    var restrictedService = new LauncherServices(Path.Combine(restrictedParent, "child"), fakePlatform);
+                    await MustThrowAsync<IOException>(() => restrictedService.LoadLibraryAsync(cancellation));
+                    Check(!Directory.Exists(Path.Combine(restrictedParent, "child")), "a non-writable profile parent produces a recoverable async error before any game data is changed");
+                }
+                finally { File.SetUnixFileMode(restrictedParent, prior); }
+            }
             string portable = Path.Combine(fixtures, "Portable.love");
             WriteZip(portable, ("main.lua", Encoding.UTF8.GetBytes("function love.draw() love.graphics.print('DUSTORE', 20, 20) end"), 0));
             string selected = inputPath is null ? portable : Path.GetFullPath(inputPath);
