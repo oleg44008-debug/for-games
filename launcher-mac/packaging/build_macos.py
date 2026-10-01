@@ -21,6 +21,7 @@ import uuid
 import xml.etree.ElementTree as ET
 import zipfile
 from macho_minimums import inspect_macho, version_tuple
+from create_macos_dmg import create_installer
 
 APP_NAME = "DUSTORE LAUNCHER V.app"
 ASSEMBLY_NAME = "DustoreLauncherV.Mac"
@@ -201,6 +202,9 @@ def main() -> int:
         zip_bundle(bundle, archive)
     report["archive"] = str(archive)
     report["archiveSha256"] = sha256(archive)
+    if signed:
+        installer = output / f"DUSTORE-LAUNCHER-V-{version}-{args.rid}.dmg"
+        report["installer"] = create_installer(bundle, installer, version)
     report_path = output / f"package-{args.rid}.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     (output / f"DUSTORE-LAUNCHER-V-{args.rid}.sha256").write_text(report["archiveSha256"] + "  " + archive.name + "\n", encoding="utf-8")

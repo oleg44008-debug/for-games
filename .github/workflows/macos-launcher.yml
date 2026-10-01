@@ -49,6 +49,7 @@ jobs:
         run: >-
           python3 launcher-mac/packaging/verify_macos.py
           --archive "$(find 'launcher-artifacts/${{ matrix.rid }}' -maxdepth 1 -name '*.app.zip' -print -quit)"
+          --installer "$(find 'launcher-artifacts/${{ matrix.rid }}' -maxdepth 1 -name '*.dmg' -print -quit)"
           --rid '${{ matrix.rid }}'
           --smoke-input ci/game/PODIEZD-macOS.zip
           --output 'launcher-artifacts/${{ matrix.rid }}/verification'
@@ -60,6 +61,7 @@ jobs:
           name: DUSTORE-LAUNCHER-V-macOS-${{ matrix.rid }}
           path: |
             launcher-artifacts/${{ matrix.rid }}/*.app.zip
+            launcher-artifacts/${{ matrix.rid }}/*.dmg
             launcher-artifacts/${{ matrix.rid }}/*.sha256
             launcher-artifacts/${{ matrix.rid }}/*.json
             launcher-artifacts/${{ matrix.rid }}/verification/*.json
@@ -67,5 +69,9 @@ jobs:
             launcher-artifacts/${{ matrix.rid }}/verification/*.png
             launcher-artifacts/${{ matrix.rid }}/verification/*.ips
             launcher-artifacts/${{ matrix.rid }}/verification/*.crash
+            launcher-artifacts/${{ matrix.rid }}/verification/installer-startup/*.json
+            launcher-artifacts/${{ matrix.rid }}/verification/installer-startup/*.log
+            launcher-artifacts/${{ matrix.rid }}/verification/installer-startup/*.ips
+            launcher-artifacts/${{ matrix.rid }}/verification/installer-startup/*.crash
           retention-days: 14
           if-no-files-found: error

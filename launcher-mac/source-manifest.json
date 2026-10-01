@@ -32,7 +32,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "62866bcaefd19a48e15d77a1670ac17e16836f4cd841d0612032fc0f4970e656"
+      "sha256": "b1ba60baa10625f534730153345ac0f927ee35edd17f49933640efc877f83cac"
     },
     {
       "path": "StartupDiagnostics.cs",
@@ -44,7 +44,11 @@
     },
     {
       "path": "packaging/build_macos.py",
-      "sha256": "a235fc4bcddffa265ae6f89f6e8bd221272907c9d0e3efb0ad4d67ab4da8e2e5"
+      "sha256": "ee73d8133fb14258e9d5a81cd11983d37d8ccd73260ee5dd238e53f3f98800a5"
+    },
+    {
+      "path": "packaging/create_macos_dmg.py",
+      "sha256": "580a81279d439083e2df12492a4f302d778bc4af346519ef5a3ed49f43f7b631"
     },
     {
       "path": "packaging/DustoreLauncherV.icns",
@@ -68,7 +72,7 @@
     },
     {
       "path": "packaging/verify_macos.py",
-      "sha256": "deff7c67a475d2a2056d889b06a1d0e79868a5941f359064d721828ff0233139"
+      "sha256": "332e8155f0ba4dd79a6431b8b51ba9372b9647c50b62ebc5146fb44156740153"
     },
     {
       "path": "packaging/tests/test_packaging.py",
@@ -107,5 +111,5 @@
       "sha256": "1b77e1d96315b4a39602d24c0df2b32ed48255c3fd02009e9c323a629e00909b"
     }
   ],
-  "workflowSha256": "8fb5ea22d3b5513715d41e733266d69d88293876313d1e538569fa2ac6ca03a3"
+  "workflowSha256": "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"
 }

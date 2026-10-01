@@ -223,6 +223,44 @@ def observe_normal_launch(bundle: Path, output: Path, version: str) -> dict:
                     (output / ("owned-crash-" + path.name)).write_text(text, encoding="utf-8")
 
 
+def verify_installer(image: Path, output: Path, rid: str, require_normal_launch: bool) -> dict:
+    # Mount only this owned artifact read-only at a fresh path; detach exactly
+    # that mount after copying with ditto, including all generic-code xattrs.
+    mount = output / ("installer-mount-" + uuid.uuid4().hex)
+    mount.mkdir()
+    attached = False
+    record = {"image": str(image.resolve()), "sha256": sha256(image), "mountedReadOnly": False}
+    try:
+        subprocess.run(["hdiutil", "verify", str(image.resolve())], check=True, capture_output=True)
+        result = subprocess.run(["hdiutil", "attach", "-readonly", "-nobrowse", "-plist", "-mountpoint", str(mount),
+                                 str(image.resolve())], check=True, capture_output=True)
+        entities = plistlib.loads(result.stdout).get("system-entities", [])
+        mounts = [Path(entity["mount-point"]).resolve() for entity in entities if entity.get("mount-point")]
+        if mount.resolve() not in mounts:
+            raise ValueError("The installer did not mount at the explicitly owned path.")
+        attached = True
+        record["mountedReadOnly"] = True
+        source = mount / APP_NAME
+        subprocess.run(["codesign", "--verify", "--deep", "--strict", str(source)], check=True, capture_output=True)
+        installed = output / ("installed-" + uuid.uuid4().hex) / APP_NAME
+        installed.parent.mkdir()
+        subprocess.run(["ditto", "--rsrc", str(source), str(installed)], check=True, capture_output=True)
+        subprocess.run(["codesign", "--verify", "--deep", "--strict", str(installed)], check=True, capture_output=True)
+        record["structure"] = validate_bundle(installed, rid)
+        record["installedCopySignatureVerified"] = True
+        if require_normal_launch:
+            probe_output = output / "installer-startup"
+            probe_output.mkdir()
+            record["normalStartup"] = observe_normal_launch(installed, probe_output,
+                record["structure"]["metadata"]["CFBundleShortVersionString"])
+        return record
+    finally:
+        if attached:
+            subprocess.run(["hdiutil", "detach", str(mount)], check=True, capture_output=True)
+            record["ownedMountDetached"] = True
+        (output / "installer-verification.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, required=True)
@@ -231,6 +269,7 @@ def main() -> int:
     parser.add_argument("--smoke-input", type=Path)
     parser.add_argument("--ui-smoke", action="store_true")
     parser.add_argument("--normal-launch", action="store_true", help="Require real LaunchServices open with default arguments/profile and a persistent native window.")
+    parser.add_argument("--installer", type=Path, help="Also require DMG read-only mount, signed-metadata-preserving installation, and normal launch.")
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -271,6 +310,8 @@ def main() -> int:
                                          "scope": "Advisory assessment only. No policies or quarantine attributes are changed."}
         if args.normal_launch:
             record["normalStartup"] = observe_normal_launch(bundle, output, record["structure"]["metadata"]["CFBundleShortVersionString"])
+        if args.installer:
+            record["installer"] = verify_installer(args.installer, output, args.rid, args.normal_launch)
         profile = output / ("profile-" + uuid.uuid4().hex)
         profile.mkdir()
         working = output / "foreign-working-directory"
