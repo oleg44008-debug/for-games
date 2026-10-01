@@ -108,10 +108,20 @@ class PackagingBoundaryChecks(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             bundle = Path(temporary) / APP_NAME
             library = bundle / "Contents" / "MacOS" / ASSEMBLY_NAME
-            output = type("OtoolOutput", (), {"stdout": "launcher:\n\t/opt/homebrew/lib/missing.dylib (compatibility version 1.0.0)\n"})()
+            output = type("OtoolOutput", (), {"stdout": "launcher:\nLoad command 1\n cmd LC_LOAD_DYLIB\n name /opt/homebrew/lib/missing.dylib (offset 24)\n"})()
             with patch("verify_macos.native_files", return_value=[library]), patch("verify_macos.subprocess.run", return_value=output):
                 with self.assertRaises(ValueError):
                     inspect_dependencies(bundle, "osx-arm64")
+
+    def test_dylib_own_id_is_not_a_foreign_library_dependency(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle = Path(temporary) / APP_NAME
+            library = bundle / "Contents" / "MacOS" / "libAvaloniaNative.dylib"
+            output = type("OtoolOutput", (), {"stdout": "dylib:\nLoad command 1\n cmd LC_ID_DYLIB\n name /usr/local/lib/libAvalonia.Native.OSX.dylib (offset 24)\nLoad command 2\n cmd LC_LOAD_DYLIB\n name /usr/lib/libSystem.B.dylib (offset 24)\n"})()
+            with patch("verify_macos.native_files", return_value=[library]), patch("verify_macos.subprocess.run", return_value=output):
+                report = inspect_dependencies(bundle, "osx-arm64")
+            self.assertEqual(report[0]["dependencies"], ["/usr/lib/libSystem.B.dylib"])
+            self.assertEqual(report[0]["installName"], "/usr/local/lib/libAvalonia.Native.OSX.dylib")
 
 
 if __name__ == "__main__":

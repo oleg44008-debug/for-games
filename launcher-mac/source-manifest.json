@@ -56,11 +56,11 @@
     },
     {
       "path": "packaging/verify_macos.py",
-      "sha256": "c1f145a0de3088d29752ad07836ec882da248b164a108a981033c88bc4476684"
+      "sha256": "53aaeebf5c59745908a9ce324f5d915212302dde90b955d5234939f327ccf52f"
     },
     {
       "path": "packaging/tests/test_packaging.py",
-      "sha256": "3a9948b1d0d5f05fc40da20e8aaea20fa78b7acfa8898add54b35e3c92454c1d"
+      "sha256": "61e474c6f31510f3526523c728cd21d1fb13cfb506411d54d89d5a3cb2a568ae"
     },
     {
       "path": "Services/GameEntry.cs",

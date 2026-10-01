@@ -97,14 +97,28 @@ def inspect_dependencies(bundle: Path, rid: str) -> list[dict]:
     natives = native_files(bundle)
     names = {path.name for path in natives}
     architecture = {"osx-arm64": "arm64", "osx-x64": "x86_64"}[rid]
+    load_commands = {"LC_LOAD_DYLIB", "LC_LOAD_WEAK_DYLIB", "LC_REEXPORT_DYLIB", "LC_LOAD_UPWARD_DYLIB", "LC_LAZY_LOAD_DYLIB"}
     for library in natives:
         # Avalonia dependencies can be universal binaries; inspect the architecture
         # actually delivered instead of interpreting a second slice's header as a dependency.
-        result = subprocess.run(["otool", "-arch", architecture, "-L", str(library)], check=True, capture_output=True, text=True)
+        result = subprocess.run(["otool", "-arch", architecture, "-l", str(library)], check=True, capture_output=True, text=True)
         dependencies = []
-        for line in result.stdout.splitlines()[1:]:
-            dependency = line.strip().split(" (", 1)[0]
-            if not dependency:
+        install_name = None
+        command = ""
+        for line in result.stdout.splitlines():
+            field = line.strip()
+            if field.startswith("cmd "):
+                command = field[4:]
+            if not field.startswith("name "):
+                continue
+            dependency = field[5:].split(" (offset ", 1)[0]
+            if command == "LC_ID_DYLIB":
+                # A dylib's own identification name is not a dependency loaded
+                # from disk. AvaloniaNative retains its upstream build ID while
+                # .NET loads the packaged dylib by its actual bundle path.
+                install_name = dependency
+                continue
+            if command not in load_commands:
                 continue
             dependencies.append(dependency)
             if dependency.startswith(("/usr/lib/", "/System/Library/")):
@@ -118,7 +132,7 @@ def inspect_dependencies(bundle: Path, rid: str) -> list[dict]:
                     raise ValueError("A native dependency is absent from the self-contained bundle: " + dependency)
             else:
                 raise ValueError("The app depends on a developer-machine library: " + dependency)
-        records.append({"path": str(library.relative_to(bundle)), "dependencies": dependencies})
+        records.append({"path": str(library.relative_to(bundle)), "installName": install_name, "dependencies": dependencies})
     return records
 
 
