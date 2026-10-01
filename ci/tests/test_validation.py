@@ -47,6 +47,22 @@ class ValidationChecks(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.successful(result, "Synthetic owned process")
 
+    def test_exact_shutdown_resource_diagnostic_is_retained_separately(self):
+        leak = "ERROR: 1 resources still in use at exit (run with --verbose for details)."
+        objects = "WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details)."
+        errors, shutdown = VALIDATOR.classify_engine_diagnostics(leak + "\n" + objects)
+        self.assertEqual(errors, [])
+        self.assertEqual(set(shutdown), {leak, objects})
+
+    def test_real_startup_script_and_native_errors_remain_fatal(self):
+        for line in ("ERROR: Failed loading resource: res://main.tscn", "SCRIPT ERROR: Parse Error: missing class",
+                     "dyld[123]: Library not loaded: missing.dylib", "FATAL: startup failed",
+                     "SCRIPT ERROR: 1 resources still in use at exit (run with --verbose for details)."):
+            with self.subTest(line=line):
+                errors, shutdown = VALIDATOR.classify_engine_diagnostics(line)
+                self.assertEqual(errors, [line])
+                self.assertEqual(shutdown, [])
+
 
 if __name__ == "__main__":
     unittest.main()

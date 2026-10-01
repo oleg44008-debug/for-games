@@ -156,6 +156,26 @@ def successful(result, stage):
     ensure(not result["timedOut"] and result["exitCode"] == 0, stage + " failed; inspect retained stdout/stderr logs")
 
 
+def classify_engine_diagnostics(text):
+    """Keep exact Godot shutdown leak diagnostics separate from startup failures.
+
+    Godot 4.7.1 ResourceCache::clear emits the resource message when unregistering
+    core types in Main::cleanup. It does not establish a failed game startup. The
+    leak remains visible in the report; every other ERROR/SCRIPT ERROR stays fatal.
+    """
+    errors = []
+    shutdown = []
+    for original in text.splitlines():
+        line = re.sub(r"\x1b\[[0-9;]*m", "", original).strip()
+        resource_exit = re.fullmatch(r"ERROR: \d+ resources still in use at exit \(run with --verbose for details\)\.", line)
+        object_exit = re.fullmatch(r"WARNING: \d+ ObjectDB instances were leaked at exit \(run with `--verbose` for details\)\.", line)
+        if resource_exit or object_exit:
+            shutdown.append(line)
+        elif re.search(r"(?:^|\s)(?:ERROR:|SCRIPT ERROR:|FATAL:|dyld\[|dyld:)", line):
+            errors.append(line)
+    return sorted(set(errors)), sorted(set(shutdown))
+
+
 def validate_reverse_windows(args, root, signed_app, work, artifacts, expected_payload):
     runtime = args.windows_runtime.resolve()
     ensure(runtime.is_file(), "Offline matching Windows runtime ZIP is required for reverse packaging")
@@ -276,9 +296,10 @@ def main():
             report["processes"]["gameStartup"] = startup
             successful(startup, "Actual PODIEZD headless startup")
             engine_text = engine_log.read_text(encoding="utf-8", errors="replace") if engine_log.exists() else ""
-            errors = [line for line in (stdout + "\n" + stderr + "\n" + engine_text).splitlines()
-                      if re.search(r"(?:^|\s)(?:ERROR:|SCRIPT ERROR:|FATAL:|dyld\[|dyld:)", line)]
-            report["startupErrors"] = sorted(set(errors))
+            errors, shutdown = classify_engine_diagnostics(stdout + "\n" + stderr + "\n" + engine_text)
+            report["startupErrors"] = errors
+            report["shutdownDiagnostics"] = shutdown
+            report["headlessShutdownClean"] = not shutdown
             ensure(not errors, "Headless startup reported engine/script errors; inspect retained logs")
             report["headlessStartupPassed"] = True
             report["reverseMacToWindows"] = {"status": "Running", "windowsExecutionTested": False}

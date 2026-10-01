@@ -14,6 +14,8 @@ Validation sequence:
 
 This proves the reported checks only. It does not test the Windows launcher GUI on Mac, rendering, controls, complete interactive gameplay, Gatekeeper acceptance or notarization. Ad-hoc signing is not a Developer ID signature.
 
+The exact Godot exit messages about resources/ObjectDB instances still alive are retained in `shutdownDiagnostics`, with `headlessShutdownClean: false`. They are emitted during [core type shutdown](https://github.com/godotengine/godot/blob/4.7.1-stable/core/register_core_types.cpp) by [ResourceCache::clear](https://github.com/godotengine/godot/blob/4.7.1-stable/core/io/resource.cpp). They do not alone fail a startup check with exit code 0. Every other engine/script error, native loader failure, nonzero exit and timeout continues to fail validation. A passing startup report does not assert leak-free shutdown.
+
 Commands from the repository root:
 
 ```sh
