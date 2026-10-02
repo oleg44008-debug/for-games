@@ -1,6 +1,6 @@
 ﻿{
     "product":  "DUSTORE LAUNCHER V macOS",
-    "version":  "5.2.5",
+    "version":  "5.2.6",
     "files":  [
                   {
                       "path":  "App.axaml",
@@ -16,7 +16,7 @@
                   },
                   {
                       "path":  "DustoreLauncherV.Mac.csproj",
-                      "sha256":  "4c254d2a02e01ad2c531fccb4acef10114f25251f04ea23e9c738052dd0a1cb2"
+                      "sha256":  "a53c3ee377c3689d8403e6f578d33eb6bbad9bc66c634e0db3642466aaa0da07"
                   },
                   {
                       "path":  "MainWindow.axaml",
@@ -124,7 +124,7 @@
                   },
                   {
                       "path":  "Services/WebKitBridge.cs",
-                      "sha256":  "c2504924e5f5969551d5d0bd2c63157cac677e5892572cfff689fcb168391c4c"
+                      "sha256":  "a14366ef4b171943359f93be749aa838509879b0c4e77b664e24733b3fec21aa"
                   },
                   {
                       "path":  "Services/WebKitDownloads.cs",

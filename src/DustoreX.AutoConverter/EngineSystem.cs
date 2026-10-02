@@ -20,6 +20,8 @@ public static class ConversionEngine
         var warnings = new List<string>();
         string engine = "Не определён", source = "Не определена", method = "unsupported";
         string? version = null;
+        GameExecutable? executable = null;
+        UnityBuildInfo? unity = null;
         var godot = TryInspectBackend("GodotPackager", input, warnings);
         if (godot is not null) { engine = "Godot"; method = "godot"; version = ReadVersion(godot); warnings.AddRange(ReadWarnings(godot)); }
         else
@@ -39,7 +41,22 @@ public static class ConversionEngine
                 if (renpy is not null) { engine = "Ren’Py"; method = "renpy"; version = ReadVersion(renpy); warnings.AddRange(ReadWarnings(renpy)); }
                 else if (nw is not null) { engine = "NW.js / RPG Maker / HTML5"; method = "nw"; version = ReadVersion(nw); warnings.AddRange(ReadWarnings(nw)); }
                 else if (target == TargetPlatform.MacOS && ContainsWindowsBuild(input))
-                { method = "wine"; engine = old.Engine == "Unknown" ? "Windows игра" : old.Engine; }
+                {
+                    method = "wine"; engine = old.Engine == "Unknown" ? "Windows игра" : old.Engine;
+                    executable = FindExecutable(input);
+                    if (executable is null) { method = "unsupported"; warnings.Add("В сборке не найден исполняемый файл Windows-игры."); }
+                    else
+                    {
+                        unity = InspectUnity(input, executable);
+                        if (unity is not null)
+                        {
+                            engine = "Unity" + (unity.Version is null ? "" : " " + unity.Version);
+                            warnings.AddRange(UnityWarnings(unity));
+                        }
+                        if (executable.Architecture == "x86")
+                            warnings.Add("Игра 32-битная (x86). На современных macOS нужен Wine с поддержкой 32-битных Windows-программ (WoW64), например Wine 9 и новее.");
+                    }
+                }
                 else if (target == TargetPlatform.Windows && ContainsWindowsBuild(input)) method = "native";
                 else { warnings.AddRange(old.Warnings); engine = old.Engine == "Unknown" ? engine : old.Engine; }
             }
@@ -56,7 +73,9 @@ public static class ConversionEngine
         string title = method switch { "wine" => "Windows игра через Wine на Mac", "native" => "Эта сборка уже предназначена для " + TargetName(target), "unsupported" => "Нужны переносимые данные или исходный проект", _ => "Перепаковка в движок для " + TargetName(target) };
         string detail = method switch
         {
-            "wine" => "Создадим Mac-приложение с исходной Windows игрой. На Mac потребуется установленный Wine. Совместимость зависит от игры; Windows код остаётся внутри пакета. При выборе EXE по исходному пути включается вся его папка: используйте отдельную папку игры, чтобы не добавить личные файлы.",
+            "wine" => (executable is null ? "" : "Запускаемый файл найден автоматически: " + executable.Path + " (" + executable.Reason + "). ")
+                + (unity is null ? "" : "Unity-сборка: " + (unity.Version ?? "версия не определена") + ", " + unity.ScriptingBackend + ", " + unity.Architecture + ". ")
+                + "Создадим Mac-приложение с исходной Windows игрой. На Mac потребуется установленный Wine. Совместимость зависит от игры; Windows код остаётся внутри пакета. При выборе EXE по исходному пути включается вся его папка: используйте отдельную папку игры, чтобы не добавить личные файлы.",
             "native" => "Конвертация не требуется: сборка уже предназначена для " + TargetName(target) + ". Выберите другую систему для переноса.",
             "unsupported" => "У этой сборки не найдены данные поддерживаемого движка. Нативный Mac executable нельзя автоматически пересобрать под Windows без исходников и платформенных зависимостей.",
             _ => "Игровые данные сохранятся, а исполняемая часть будет взята из движка нужной системы. Движок загружается с официального источника один раз. Создание пакета не подтверждает его запуск на целевом компьютере."
@@ -92,6 +111,34 @@ public static class ConversionEngine
                 .Append("Использован официальный runtime из каталога с проверенной контрольной суммой. Совместимость игры и возможностей движка требует запуска на целевой системе.").ToArray()
         };
         return result;
+    }
+
+    private static GameExecutable? FindExecutable(string input)
+    {
+        if (File.Exists(input) && !SafeData.IsZip(input))
+        {
+            using var file = File.OpenRead(input);
+            string kind = BinaryKind.Read(file);
+            return kind.StartsWith("Windows PE", StringComparison.Ordinal) ? new GameExecutable(Path.GetFileName(input), kind["Windows PE ".Length..], "выбран вручную", []) : null;
+        }
+        return GameExecutableFinder.Find(input);
+    }
+
+    // A single chosen EXE is packaged with its whole folder, so Unity data is read from that folder.
+    private static UnityBuildInfo? InspectUnity(string input, GameExecutable executable) =>
+        File.Exists(input) && !SafeData.IsZip(input)
+            ? GameExecutableFinder.InspectUnity(Path.GetDirectoryName(input)!, executable)
+            : GameExecutableFinder.InspectUnity(input, executable);
+
+    private static IEnumerable<string> UnityWarnings(UnityBuildInfo unity)
+    {
+        // Why there is no Godot-style runtime swap for Unity.
+        yield return "Unity нельзя перенести заменой движка, как Godot: Windows-сборка содержит шейдеры только для DirectX, а скрипты "
+            + (unity.ScriptingBackend == "IL2CPP" ? "уже скомпилированы в машинный код Windows (IL2CPP)" : "привязаны к версии Unity-плеера")
+            + ". Нативная Mac-версия собирается из проекта Unity. Без проекта — запуск через Wine.";
+        if (unity.ScriptingBackend == "IL2CPP")
+            yield return "IL2CPP-сборка: игровой код в GameAssembly.dll. Под Wine работает так же, как Mono-сборка; моды и подмена DLL недоступны.";
+        yield return "Unity под Wine рисует через Direct3D 11. Для стабильной графики нужен Wine с DXVK/MoltenVK (например, CrossOver или сборки Gcenx); на чистом Wine часть игр выдаёт чёрный экран.";
     }
 
     public static string TargetName(TargetPlatform target) => target == TargetPlatform.Windows ? "Windows" : "macOS";

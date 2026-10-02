@@ -252,6 +252,63 @@ else if (httpIndex >= 0)
     await HttpChecks.RunAsync(suite, args[httpIndex + 1]);
 }
 #endif
+await suite.RunAsync("Unity Mono build: main EXE found beside its _Data folder, crash handler ignored", box =>
+{
+    byte[] versionHeader = Encoding.ASCII.GetBytes("\0\0\0\0\0\0\0\u0016\0\0\0\02021.3.16f1\0synthetic serialized file");
+    string input = box.Zip("unity-mono.zip",
+        new ZipItem("KONTUR/UnityCrashHandler64.exe", FixtureBox.PortableExecutable().Concat(new byte[4096]).ToArray()),
+        new ZipItem("KONTUR/KONTUR.exe", FixtureBox.PortableExecutable()),
+        new ZipItem("KONTUR/UnityPlayer.dll", FixtureBox.PortableExecutable(isDll: true)),
+        new ZipItem("KONTUR/KONTUR_Data/globalgamemanagers", versionHeader),
+        new ZipItem("KONTUR/KONTUR_Data/Managed/Assembly-CSharp.dll", FixtureBox.PortableExecutable(isDll: true)),
+        new ZipItem("KONTUR/MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", FixtureBox.PortableExecutable(isDll: true)));
+    GameExecutable? exe = GameExecutableFinder.Find(input);
+    CheckSuite.Assert(exe?.Path == "KONTUR/KONTUR.exe" && exe.Reason.Contains("_Data", StringComparison.Ordinal), "Unity main executable was not chosen by its data folder: " + exe?.Path);
+    CheckSuite.Assert(exe!.Skipped.Contains("KONTUR/UnityCrashHandler64.exe"), "Crash handler was not reported as skipped.");
+    ConversionPlan plan = ConversionEngine.Inspect(input, TargetPlatform.MacOS);
+    CheckSuite.Assert(plan.Method == "wine" && plan.CanConvert && plan.Engine == "Unity 2021.3.16f1", "Unity build was not planned with its version: " + plan.Engine);
+    CheckSuite.Assert(plan.Detail.Contains("KONTUR/KONTUR.exe", StringComparison.Ordinal) && plan.Detail.Contains("Mono", StringComparison.Ordinal), "Plan does not name the chosen EXE and scripting backend.");
+    CheckSuite.Assert(plan.Warnings.Any(w => w.Contains("DirectX", StringComparison.Ordinal)), "Plan does not explain why Unity is not runtime-swapped like Godot.");
+    PackageResult result = CompatibilityPackager.Package(new PackageRequest(input, "", box.Path("unity-wine.zip"), TargetPlatform.MacOS, "KONTUR"));
+    using var zip = ZipFile.OpenRead(result.OutputPath);
+    string script = Read(zip, "KONTUR.app/Contents/MacOS/launch");
+    CheckSuite.Assert(script.Contains("/'KONTUR'\nexec \"$WINE\" 'KONTUR.exe' \"$@\"", StringComparison.Ordinal), "Wine wrapper did not start the Unity game executable.");
+});
+await suite.RunAsync("Unity IL2CPP 32-bit build reports backend and WoW64 requirement", box =>
+{
+    byte[] x86 = FixtureBox.PortableExecutable();
+    System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(x86.AsSpan(0x84), 0x14c);
+    string input = box.Zip("unity-il2cpp.zip",
+        new ZipItem("Game.exe", x86), new ZipItem("UnityCrashHandler32.exe", x86),
+        new ZipItem("GameAssembly.dll", FixtureBox.PortableExecutable(isDll: true)),
+        new ZipItem("Game_Data/data.unity3d", Encoding.ASCII.GetBytes("UnityFS\0\0\0\0\u00085.x.x\02019.4.40f1\0bundle")),
+        ZipItem.Text("Game_Data/il2cpp_data/Metadata/global-metadata.dat", "synthetic"));
+    ConversionPlan plan = ConversionEngine.Inspect(input, TargetPlatform.MacOS);
+    CheckSuite.Assert(plan.CanConvert && plan.Engine == "Unity 2019.4.40f1" && plan.Detail.Contains("IL2CPP", StringComparison.Ordinal) && plan.Detail.Contains("x86", StringComparison.Ordinal), "IL2CPP x86 facts missing: " + plan.Engine + " / " + plan.Detail);
+    CheckSuite.Assert(plan.Warnings.Any(w => w.Contains("32-бит", StringComparison.Ordinal)), "32-bit Wine requirement was not explained.");
+});
+await suite.RunAsync("Godot console wrapper, Unreal shipping binary and redistributables are not chosen", box =>
+{
+    string godot = box.Zip("godot.zip", new ZipItem("Game.console.exe", FixtureBox.PortableExecutable().Concat(new byte[8192]).ToArray()),
+        new ZipItem("Game.exe", FixtureBox.PortableExecutable()), ZipItem.Text("Game.pck", "synthetic pck"));
+    CheckSuite.Assert(GameExecutableFinder.Find(godot)?.Path == "Game.exe", "Godot console wrapper was chosen.");
+    string unreal = box.Zip("unreal.zip", new ZipItem("Hollow.exe", FixtureBox.PortableExecutable()),
+        new ZipItem("Hollow/Binaries/Win64/Hollow-Win64-Shipping.exe", FixtureBox.PortableExecutable().Concat(new byte[8192]).ToArray()),
+        new ZipItem("Engine/Extras/Redist/en-us/UE4PrereqSetup_x64.exe", FixtureBox.PortableExecutable().Concat(new byte[16384]).ToArray()));
+    CheckSuite.Assert(GameExecutableFinder.Find(unreal)?.Path == "Hollow.exe", "Unreal bootstrap was not chosen: " + GameExecutableFinder.Find(unreal)?.Path);
+    string redist = box.Zip("redist.zip", new ZipItem("_CommonRedist/vcredist/2019/VC_redist.x64.exe", FixtureBox.PortableExecutable().Concat(new byte[16384]).ToArray()),
+        new ZipItem("NightRide.exe", FixtureBox.PortableExecutable()), new ZipItem("unins000.exe", FixtureBox.PortableExecutable()));
+    CheckSuite.Assert(GameExecutableFinder.Find(redist)?.Path == "NightRide.exe", "Redistributable or uninstaller was chosen.");
+});
+await suite.RunAsync("A build with only helper executables is refused instead of guessed", box =>
+{
+    string input = box.Zip("helpers.zip", new ZipItem("UnityCrashHandler64.exe", FixtureBox.PortableExecutable()),
+        new ZipItem("redist/vcredist_x64.exe", FixtureBox.PortableExecutable()));
+    CheckSuite.Assert(GameExecutableFinder.Find(input) is null, "A helper executable was presented as the game.");
+    ConversionPlan plan = ConversionEngine.Inspect(input, TargetPlatform.MacOS);
+    CheckSuite.Assert(!plan.CanConvert, "A build without a game executable was offered for conversion.");
+    CheckSuite.Reject(() => CompatibilityPackager.Package(new PackageRequest(input, "", box.Path("helpers-wine.zip"), TargetPlatform.MacOS, "Synthetic")));
+});
 return suite.Report();
 
 static string Read(ZipArchive archive, string name)

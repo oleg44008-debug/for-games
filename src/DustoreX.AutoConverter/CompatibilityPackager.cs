@@ -25,9 +25,11 @@ public static class CompatibilityPackager
         if (single) executable = executables.SingleOrDefault(i => i.Name == Path.GetFileName(input)) ?? throw new InvalidDataException("Исходный EXE не найден.");
         else
         {
-            var candidates = executables.Where(i => !Path.GetFileName(i.Name).StartsWith("unins", StringComparison.OrdinalIgnoreCase) && !Path.GetFileName(i.Name).StartsWith("setup", StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (candidates.Length != 1) throw new InvalidDataException("В папке несколько EXE. Выберите исполняемый файл игры; соседние файлы будут включены автоматически.");
-            executable = candidates[0];
+            // Builds carry helpers (crash handlers, redistributables, console wrappers); the finder
+            // uses the engine layout to pick the file that actually starts the game.
+            var chosen = GameExecutableFinder.Find(data.Items, request.GameName)
+                ?? throw new InvalidDataException("В сборке не найден исполняемый файл Windows-игры.");
+            executable = executables.Single(i => i.Name == chosen.Path);
         }
         using (var stream = executable.Open()) if (!BinaryKind.Read(stream).StartsWith("Windows PE", StringComparison.Ordinal)) throw new InvalidDataException("Файл не является Windows executable.");
         var warnings = new[] { "На Mac требуется установленный Wine с поддержкой архитектуры этой игры. Wine не включён в пакет.", "Этот пакет сохраняет Windows executable. Создание обёртки не подтверждает совместимость графики, DRM, античита и системных API.", "Сохранены все соседние файлы исходной папки. Не публикуйте личные данные и сохранения вместе с игрой." };

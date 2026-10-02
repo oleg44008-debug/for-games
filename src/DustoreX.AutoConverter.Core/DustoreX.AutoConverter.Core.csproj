@@ -17,5 +17,6 @@
     <Compile Include="../DustoreX.AutoConverter/EngineSystem.cs" Link="EngineSystem.cs" />
     <Compile Include="../DustoreX.AutoConverter/RuntimeCatalog.cs" Link="RuntimeCatalog.cs" />
     <Compile Include="../DustoreX.AutoConverter/CompatibilityPackager.cs" Link="CompatibilityPackager.cs" />
+    <Compile Include="../DustoreX.AutoConverter/GameExecutableFinder.cs" Link="GameExecutableFinder.cs" />
   </ItemGroup>
 </Project>
