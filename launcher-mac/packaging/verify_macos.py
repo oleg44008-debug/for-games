@@ -352,7 +352,8 @@ def main() -> int:
             command = [str(executable), "--ui-smoke", "--smoke-report", str(ui_report), "--smoke-screenshot", str(image)]
             if args.smoke_input:
                 command += ["--smoke-input", str(args.smoke_input.resolve())]
-            record["uiStartup"] = run_owned_process(command, working, env, output / "launcher-ui-smoke.log", 90)
+            # The UI smoke downloads the game twice through the in-app store; slow Intel runners need the room.
+            record["uiStartup"] = run_owned_process(command, working, env, output / "launcher-ui-smoke.log", 240)
             record["uiStartup"]["checks"] = json.loads(ui_report.read_text(encoding="utf-8"))
             validate_ui_report(record["uiStartup"]["checks"], bool(args.smoke_input))
             record["uiStartup"]["images"] = {}

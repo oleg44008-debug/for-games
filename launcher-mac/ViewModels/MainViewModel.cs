@@ -237,11 +237,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    /// <summary>Hosts whose downloads count as store downloads (dustore.ru and its subdomains).</summary>
+    /// <summary>
+    /// Sites whose downloads count as store downloads: dustore.ru and its subdomains. An entry
+    /// with a port ("host:port") matches that exact address only (used by the Mac CI store mock).
+    /// </summary>
     public static HashSet<string> TrustedStoreHosts { get; } = new(StringComparer.OrdinalIgnoreCase) { "dustore.ru" };
     public static bool IsTrustedStorePage(string page) =>
         Uri.TryCreate(page, UriKind.Absolute, out var url)
-        && TrustedStoreHosts.Any(host => url.Host.Equals(host, StringComparison.OrdinalIgnoreCase) || url.Host.EndsWith("." + host, StringComparison.OrdinalIgnoreCase));
+        && TrustedStoreHosts.Any(host => host.Contains(':')
+            ? url.Authority.Equals(host, StringComparison.OrdinalIgnoreCase)
+            : url.Host.Equals(host, StringComparison.OrdinalIgnoreCase) || url.Host.EndsWith("." + host, StringComparison.OrdinalIgnoreCase));
 
     public void OpenDownloadInBrowser(string url) => _ = PerformAsync("Открываю загрузку в браузере…", ct => _services.OpenUrlAsync(url, ct));
 

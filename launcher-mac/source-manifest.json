@@ -8,7 +8,7 @@
                   },
                   {
                       "path":  "App.axaml.cs",
-                      "sha256":  "aac5a0f7bb82478789b695d3d6d3ea98e3e9fd03310298a0256222e834f9af26"
+                      "sha256":  "ac5eef94851428f03ea0200bd3b072989231da63818cfc215210c466abe70867"
                   },
                   {
                       "path":  "ci-status.py",
@@ -84,7 +84,7 @@
                   },
                   {
                       "path":  "packaging/verify_macos.py",
-                      "sha256":  "80c3ddc27116408f3a7ef07580a7dba20be2cd8faec63bbf06ea1d9a08d61c33"
+                      "sha256":  "e3f56a2837376001b662c00de8ee4e217408097ae62bb08e69cb76f193d59748"
                   },
                   {
                       "path":  "packaging/tests/test_packaging.py",
@@ -132,7 +132,7 @@
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "5cd8c356a3f2b21162582dd2b0146c4442d5b9ba43350bb5c9947e21767b7565"
+                      "sha256":  "7527dc19a8f8343a6dd058ffff58ff907b6480280ff2db8ef7d3080cd0419877"
                   }
               ],
     "workflowSha256":  "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"
