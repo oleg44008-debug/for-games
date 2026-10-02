@@ -32,6 +32,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _error = "", _result = "", _runtimeVersion = "", _runtimePath = "";
     private string _webTitle = "", _webAddress = "";
     private WebLoadError? _webError;
+    private DownloadSnapshot? _download;
+    private int _importedDownloadId;
+    private Guid? _downloadedGameId;
+    private string _downloadNote = "";
     private double _webProgress;
     private bool _webLoading, _webCanGoBack, _webCanGoForward;
     private bool _busy;
@@ -194,6 +198,68 @@ public sealed class MainViewModel : INotifyPropertyChanged
     };
     public string WebRetryUrl => WebError?.FailingUrl is { Length: > 0 } failed ? failed : WebStartUrl;
     public void ClearWebError() => WebError = null;
+
+    // Store downloads: progress under the in-app site, then the game joins the library.
+    public bool HasDownload => _download is not null;
+    public bool DownloadRunning => _download?.Status == DownloadStatus.Running;
+    public bool DownloadReady => _downloadedGameId is not null && _download?.Status == DownloadStatus.Finished;
+    public Guid? DownloadedGameId => _downloadedGameId;
+    public DownloadSnapshot? LastDownload => _download;
+    public string DownloadName => _download?.Name is { Length: > 0 } name ? name : "Игра";
+    public double DownloadPercent => (_download?.Fraction ?? 0) * 100;
+    public string DownloadText => _download switch
+    {
+        null => "",
+        { Status: DownloadStatus.Running } d => d.TotalBytes > 0
+            ? $"{Megabytes(d.ReceivedBytes)} из {Megabytes(d.TotalBytes)} МБ · {d.Fraction * 100:0}%" : $"{Megabytes(d.ReceivedBytes)} МБ",
+        { Status: DownloadStatus.Finished } => _downloadNote.Length > 0 ? _downloadNote : "Скачано. Добавляю в библиотеку…",
+        { Status: DownloadStatus.Cancelled } => "Загрузка отменена.",
+        { Status: DownloadStatus.Failed } d => "Не удалось скачать: " + d.Error,
+        _ => ""
+    };
+    public ICommand OpenDownloadedGameCommand => new RelayCommand(() =>
+    {
+        if (_downloadedGameId is { } id) { Shelf = "all"; Section = "library"; SelectedGame = Games.FirstOrDefault(g => g.Entry.Id == id) ?? SelectedGame; }
+    });
+    public ICommand DismissDownloadCommand => new RelayCommand(() => { _download = null; NotifyDownload(); });
+    private static string Megabytes(long bytes) => (bytes / 1048576.0).ToString(bytes < 10 * 1048576 ? "0.0" : "0", Russian);
+
+    public void UpdateDownload(DownloadSnapshot download)
+    {
+        bool finishedNow = download.Status == DownloadStatus.Finished && download.Id != _importedDownloadId;
+        if (_download?.Id != download.Id) { _downloadNote = ""; _downloadedGameId = null; }
+        _download = download;
+        NotifyDownload();
+        if (finishedNow)
+        {
+            _importedDownloadId = download.Id;
+            _ = ImportDownloadAsync(download);
+        }
+    }
+
+    public void OpenDownloadInBrowser(string url) => _ = PerformAsync("Открываю загрузку в браузере…", ct => _services.OpenUrlAsync(url, ct));
+
+    private async Task ImportDownloadAsync(DownloadSnapshot download)
+    {
+        // A running operation finishes first; downloads never interrupt eX.
+        while (IsBusy) await Task.Delay(300);
+        await PerformAsync("Добавляю скачанную игру в библиотеку…", async ct =>
+        {
+            var entry = await _services.AddGameAsync(download.Path, ct);
+            await ReloadLibraryAsync(ct, SelectedGame?.Entry.Id ?? entry.Id);
+            _downloadedGameId = entry.Id;
+            _downloadNote = entry.CanLaunchOnMac ? "Готово: игра в библиотеке и готова к запуску." : "Готово: игра в библиотеке. Для Mac перенесите её через eX.";
+            Status = _downloadNote;
+        });
+        if (_downloadedGameId is null && HasError) _downloadNote = "Скачано, но не добавлено: " + Error;
+        NotifyDownload();
+    }
+
+    private void NotifyDownload()
+    {
+        foreach (string property in new[] { nameof(HasDownload), nameof(DownloadRunning), nameof(DownloadReady), nameof(DownloadName), nameof(DownloadPercent), nameof(DownloadText) })
+            Notify(property);
+    }
 
     public void UpdateWebState(string url, string title, bool loading, double progress, bool canGoBack, bool canGoForward, WebLoadError? error = null)
     {

@@ -156,7 +156,9 @@ def main() -> int:
     metadata = {"CFBundleExecutable": ASSEMBLY_NAME, "CFBundleName": "DUSTORE V", "CFBundleDisplayName": "DUSTORE LAUNCHER V",
                 "CFBundleIdentifier": "io.dustore.launcher.v", "CFBundleVersion": version, "CFBundleShortVersionString": version,
                 "CFBundleIconFile": "DustoreLauncherV.icns", "CFBundleInfoDictionaryVersion": "6.0", "CFBundlePackageType": "APPL",
-                "NSHighResolutionCapable": True, "LSMinimumSystemVersion": {"osx-x64": "10.15", "osx-arm64": "11.0"}[args.rid]}
+                "NSHighResolutionCapable": True, "LSMinimumSystemVersion": {"osx-x64": "10.15", "osx-arm64": "11.0"}[args.rid],
+                # Store pages stay under App Transport Security; only loopback hosts (the CI store mock) may use HTTP.
+                "NSAppTransportSecurity": {"NSAllowsLocalNetworking": True}}
     minimum_records = []
     for path in native_files(bundle):
         minimum_record = inspect_macho(path.read_bytes(), {"osx-x64": "x64", "osx-arm64": "arm64"}[args.rid])

@@ -7,12 +7,12 @@ namespace DustoreLauncherV.Mac.Services;
 /// WebKit that ships with macOS, so the launcher does not bundle a browser engine.
 /// Every call must happen on the AppKit main thread (Avalonia's UI thread).
 /// </summary>
-internal static unsafe class WebKitBridge
+internal static unsafe partial class WebKitBridge
 {
     private const string ObjC = "/usr/lib/libobjc.A.dylib";
     private const string WebKitFramework = "/System/Library/Frameworks/WebKit.framework/WebKit";
     // WKWebView reports a bare WebKit user agent; sites expecting Safari get the familiar token.
-    private const string UserAgentSuffix = "Version/18.0 Safari/605.1.15 DustoreLauncherV/5.2.3";
+    private const string UserAgentSuffix = "Version/18.0 Safari/605.1.15 DustoreLauncherV/5.2.4";
 
     [StructLayout(LayoutKind.Sequential)]
     private struct CGRect { public double X, Y, Width, Height; }
@@ -120,6 +120,7 @@ internal static unsafe class WebKitBridge
             class_addMethod(cls, Sel("webView:didStartProvisionalNavigation:"), (IntPtr)started, "v@:@@");
             class_addMethod(cls, Sel("webView:didFailProvisionalNavigation:withError:"), (IntPtr)failed, "v@:@@@");
             class_addMethod(cls, Sel("webView:didFailNavigation:withError:"), (IntPtr)failed, "v@:@@@");
+            RegisterDownloadMethods(cls);
             foreach (string name in new[] { "WKUIDelegate", "WKNavigationDelegate" })
             {
                 IntPtr protocol = objc_getProtocol(name);

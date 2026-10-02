@@ -166,6 +166,9 @@ def validate_ui_report(report: dict, require_input: bool) -> None:
         raise ValueError("The Dustore store did not open inside the launcher's own WKWebView.")
     if store.get("failedLoadShowsError") is not True:
         raise ValueError("A failed in-app page load left an empty view instead of the error screen.")
+    download = store.get("storeDownload") or {}
+    if require_input and (download.get("addedToLibrary") is not True or download.get("readyToLaunch") is not True):
+        raise ValueError("A store download did not land in the library ready to launch.")
 
 
 def inspect_rendered_image(image: Path, output: Path) -> dict:

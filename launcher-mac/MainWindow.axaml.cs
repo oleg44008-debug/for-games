@@ -37,8 +37,12 @@ public partial class MainWindow : Window
         if (NativeWebView.IsSupported && this.FindControl<Panel>("SiteHost") is { } siteHost)
         {
             // WKWebView exists only on macOS; other systems never create a native host.
+            if (!string.IsNullOrWhiteSpace(ViewModel.DataDirectory))
+                Services.WebKitBridge.DownloadDirectory = System.IO.Path.Combine(ViewModel.DataDirectory, "Downloads");
             _web = new NativeWebView();
             _web.StateChanged += (_, _) => PushWebState();
+            _web.DownloadChanged += (_, download) => ViewModel.UpdateDownload(download);
+            _web.FallbackDownload += (_, url) => ViewModel.OpenDownloadInBrowser(url);
             siteHost.Children.Add(_web);
         }
         ViewModel.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Section)) ShowWebSection(); };
@@ -86,6 +90,7 @@ public partial class MainWindow : Window
         _web?.Navigate(url);
     }
     private void DismissError_Click(object? sender, RoutedEventArgs e) => ViewModel.DismissError();
+    private void CancelDownload_Click(object? sender, RoutedEventArgs e) => _web?.CancelDownload();
 
     private void DragArea_PointerPressed(object? sender, PointerPressedEventArgs e)
     {

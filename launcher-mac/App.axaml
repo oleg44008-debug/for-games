@@ -50,6 +50,7 @@
     <StreamGeometry x:Key="IconMac">M4.5 5.5h15v10h-15z M2.5 18.5h19 M10 15.5l-.5 3 M14 15.5l.5 3</StreamGeometry>
     <StreamGeometry x:Key="IconFile">M6.5 3h7.5l4 4v14h-11.5z M14 3v4h4</StreamGeometry>
     <StreamGeometry x:Key="IconLock">M7 11h10v9H7z M9 11V8.5a3 3 0 0 1 6 0V11</StreamGeometry>
+    <StreamGeometry x:Key="IconDownload">M12 4v11 M7.5 10.5L12 15l4.5-4.5 M5 19.5h14</StreamGeometry>
     <StreamGeometry x:Key="IconClose">M6.5 6.5l11 11 M17.5 6.5l-11 11</StreamGeometry>
   </Application.Resources>
 

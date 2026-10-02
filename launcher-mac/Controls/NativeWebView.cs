@@ -25,6 +25,9 @@ public sealed class NativeWebView : NativeControlHost
     public bool IsCreated => _webView != IntPtr.Zero;
     public WebPageState State => _state;
     public event EventHandler? StateChanged;
+    public event EventHandler<DownloadSnapshot>? DownloadChanged;
+    public event EventHandler<string>? FallbackDownload;
+    private DownloadSnapshot? _download;
 
     public void Navigate(string url)
     {
@@ -36,6 +39,7 @@ public sealed class NativeWebView : NativeControlHost
     public void GoBack() { if (_webView != IntPtr.Zero) WebKitBridge.GoBack(_webView); }
     public void GoForward() { if (_webView != IntPtr.Zero) WebKitBridge.GoForward(_webView); }
     public void Reload() { if (_webView != IntPtr.Zero) WebKitBridge.Reload(_webView); }
+    public void CancelDownload() => WebKitBridge.CancelDownload();
 
     protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
     {
@@ -62,6 +66,12 @@ public sealed class NativeWebView : NativeControlHost
     private void Poll()
     {
         if (_webView == IntPtr.Zero) return;
+        if (WebKitBridge.TakeFallbackDownloadUrl() is { } fallback) FallbackDownload?.Invoke(this, fallback);
+        if (WebKitBridge.CurrentDownload is { } download && download != _download)
+        {
+            _download = download;
+            DownloadChanged?.Invoke(this, download);
+        }
         var next = WebKitBridge.ReadState(_webView);
         if (next == _state) return;
         _state = next;
