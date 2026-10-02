@@ -157,17 +157,45 @@ public static class WineRuntime
     internal static async Task<(int Code, string Output)> RunAsync(string tool, IEnumerable<string> arguments, IDictionary<string, string>? environment,
         TimeSpan timeout, CancellationToken cancellation)
     {
-        var start = new ProcessStartInfo(tool) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        var start = new ProcessStartInfo(tool)
+        {
+            RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true, UseShellExecute = false
+        };
         foreach (string argument in arguments) start.ArgumentList.Add(argument);
         if (environment is not null) foreach (var (key, value) in environment) start.Environment[key] = value;
         using var process = Process.Start(start) ?? throw new IOException("Не удалось запустить " + tool);
-        var stdout = process.StandardOutput.ReadToEndAsync(cancellation);
-        var stderr = process.StandardError.ReadToEndAsync(cancellation);
+        process.StandardInput.Close(); // Wine must never wait for console input.
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         limit.CancelAfter(timeout);
+        var output = new System.Text.StringBuilder();
+        // Wine starts wineserver, which inherits the pipes and outlives wine itself: read as data
+        // arrives and never wait for end-of-file without a bound.
+        var readers = Task.WhenAll(Pump(process.StandardOutput, output, limit.Token), Pump(process.StandardError, output, limit.Token));
         try { await process.WaitForExitAsync(limit.Token); }
-        catch (OperationCanceledException) { try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } throw; }
-        return (process.ExitCode, await stdout + await stderr);
+        catch (OperationCanceledException)
+        {
+            try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+            throw new TimeoutException($"{Path.GetFileName(tool)} не ответил за {timeout.TotalSeconds:0} с. Вывод: " + Tail(output));
+        }
+        await Task.WhenAny(readers, Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None));
+        lock (output) return (process.ExitCode, output.ToString());
+    }
+
+    private static async Task Pump(StreamReader reader, System.Text.StringBuilder output, CancellationToken cancellation)
+    {
+        char[] buffer = new char[4096];
+        try
+        {
+            for (int read; (read = await reader.ReadAsync(buffer.AsMemory(), cancellation)) > 0;)
+                lock (output) output.Append(buffer, 0, read);
+        }
+        catch (OperationCanceledException) { }
+        catch (IOException) { }
+    }
+
+    private static string Tail(System.Text.StringBuilder output)
+    {
+        lock (output) { string text = output.ToString(); return text.Length > 800 ? text[^800..] : text; }
     }
 
     /// <summary>A packaged eX Wine wrapper declares a local.dustorex.wine.* bundle identifier.</summary>
