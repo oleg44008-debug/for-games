@@ -8,7 +8,7 @@
                   },
                   {
                       "path":  "App.axaml.cs",
-                      "sha256":  "61b18ad8053c325d46d7de0ef8f2b662d5ea1cdc42f705cfe446f7ba26014411"
+                      "sha256":  "aac5a0f7bb82478789b695d3d6d3ea98e3e9fd03310298a0256222e834f9af26"
                   },
                   {
                       "path":  "ci-status.py",

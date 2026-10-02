@@ -153,13 +153,14 @@ public partial class App : Application
 
     // Mirrors the store: a game page whose download link answers 302 to an S3-style
     // application/zip without Content-Disposition. The game must land in the library.
-    // 127.0.0.1 stands in for dustore.ru (trusted store); "localhost" is any other site.
+    // 127.0.0.1 stands in for dustore.ru (trusted store); [::1] is any other site.
     private static async Task<object> VerifyStoreDownloadAsync(MainWindow window, Controls.NativeWebView web, string gameZip)
     {
         int port = System.Net.Sockets.TcpListener.Create(0) is var probe ? StartAndStop(probe) : 0;
         using var listener = new System.Net.HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Prefixes.Add($"http://localhost:{port}/");
+        // An IPv6 literal is a second, distinct host without depending on how "localhost" resolves.
+        listener.Prefixes.Add($"http://[::1]:{port}/");
         listener.Start();
         _ = Task.Run(async () =>
         {
@@ -199,7 +200,7 @@ public partial class App : Application
         ViewModels.MainViewModel.TrustedStoreHosts.Add("127.0.0.1");
         int before = window.ViewModel.Games.Count;
         var store = await DownloadThroughPageAsync(window, web, $"http://127.0.0.1:{port}/g/1");
-        var other = await DownloadThroughPageAsync(window, web, $"http://localhost:{port}/g/1");
+        var other = await DownloadThroughPageAsync(window, web, $"http://[::1]:{port}/g/1");
         listener.Stop();
         if (store.downloadQuarantined || store.preparedAppQuarantined)
             throw new InvalidOperationException("A store download kept the quarantine marker, so the game would stop at Gatekeeper.");
@@ -227,7 +228,7 @@ public partial class App : Application
             if (window.ViewModel.LastDownload is { Status: Services.DownloadStatus.Failed or Services.DownloadStatus.Cancelled } broken && broken.Id > previous)
                 throw new InvalidOperationException("The store download failed: " + broken.Error);
             if (window.ViewModel.HasWebError)
-                throw new InvalidOperationException("The store download page failed: " + window.ViewModel.WebErrorMessage);
+                throw new InvalidOperationException($"The download page {pageUrl} failed: {window.ViewModel.WebErrorMessage} ({window.ViewModel.WebError?.FailingUrl})");
         }
         var downloaded = window.ViewModel.LastDownload;
         if (window.ViewModel.DownloadedGameId is not { } id || downloaded is null || downloaded.Id <= previous)
