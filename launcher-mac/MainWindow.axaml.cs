@@ -68,12 +68,23 @@ public partial class MainWindow : Window
     {
         if (_web is null) return;
         var state = _web.State;
-        ViewModel.UpdateWebState(state.Url, state.Title, state.IsLoading, state.Progress, state.CanGoBack, state.CanGoForward);
+        ViewModel.UpdateWebState(state.Url, state.Title, state.IsLoading, state.Progress, state.CanGoBack, state.CanGoForward, state.Error);
     }
 
     private void WebBack_Click(object? sender, RoutedEventArgs e) => _web?.GoBack();
     private void WebForward_Click(object? sender, RoutedEventArgs e) => _web?.GoForward();
-    private void WebReload_Click(object? sender, RoutedEventArgs e) => _web?.Reload();
+    private void WebReload_Click(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel.HasWebError) WebRetry_Click(sender, e);
+        else _web?.Reload();
+    }
+
+    private void WebRetry_Click(object? sender, RoutedEventArgs e)
+    {
+        string url = ViewModel.WebRetryUrl;
+        ViewModel.ClearWebError();
+        _web?.Navigate(url);
+    }
     private void DismissError_Click(object? sender, RoutedEventArgs e) => ViewModel.DismissError();
 
     private void DragArea_PointerPressed(object? sender, PointerPressedEventArgs e)

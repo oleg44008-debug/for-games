@@ -12,7 +12,7 @@ internal static unsafe class WebKitBridge
     private const string ObjC = "/usr/lib/libobjc.A.dylib";
     private const string WebKitFramework = "/System/Library/Frameworks/WebKit.framework/WebKit";
     // WKWebView reports a bare WebKit user agent; sites expecting Safari get the familiar token.
-    private const string UserAgentSuffix = "Version/18.0 Safari/605.1.15 DustoreLauncherV/5.2.2";
+    private const string UserAgentSuffix = "Version/18.0 Safari/605.1.15 DustoreLauncherV/5.2.3";
 
     [StructLayout(LayoutKind.Sequential)]
     private struct CGRect { public double X, Y, Width, Height; }
@@ -30,10 +30,16 @@ internal static unsafe class WebKitBridge
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern IntPtr Send(IntPtr target, IntPtr selector, CGRect frame, IntPtr argument);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern void SendVoid(IntPtr target, IntPtr selector, IntPtr argument);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern void SendVoid(IntPtr target, IntPtr selector, byte argument);
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern void SendVoid(IntPtr target, IntPtr selector, IntPtr first, IntPtr second);
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern IntPtr Send(IntPtr target, IntPtr selector, byte argument);
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern nint SendNint(IntPtr target, IntPtr selector);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern byte SendBool(IntPtr target, IntPtr selector);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern double SendDouble(IntPtr target, IntPtr selector);
 
     private static IntPtr _delegate;
+
+    /// <summary>The last page load that failed, cleared when a new navigation starts.</summary>
+    public static WebLoadError? LastError { get; private set; }
 
     private static IntPtr Class(string name) => objc_getClass(name);
     private static IntPtr Sel(string name) => sel_registerName(name);
@@ -67,8 +73,12 @@ internal static unsafe class WebKitBridge
             new CGRect { Width = 800, Height = 600 }, configuration);
         if (webView == IntPtr.Zero) return IntPtr.Zero;
         SendVoid(webView, Sel("setAllowsBackForwardNavigationGestures:"), (byte)1);
-        // WKWebView ignores target=_blank links unless a UI delegate answers them.
+        // Let the launcher's dark surface show while a page loads instead of a white sheet.
+        SendVoid(webView, Sel("setValue:forKey:"), Send(Class("NSNumber"), Sel("numberWithBool:"), (byte)0), NSString("drawsBackground"));
+        // WKWebView ignores target=_blank links unless a UI delegate answers them,
+        // and a failed load stays blank unless a navigation delegate reports it.
         SendVoid(webView, Sel("setUIDelegate:"), UiDelegate());
+        SendVoid(webView, Sel("setNavigationDelegate:"), UiDelegate());
         return webView;
     }
 
@@ -89,7 +99,8 @@ internal static unsafe class WebKitBridge
         SendBool(webView, Sel("canGoBack")) != 0,
         SendBool(webView, Sel("canGoForward")) != 0,
         SendBool(webView, Sel("isLoading")) != 0,
-        SendDouble(webView, Sel("estimatedProgress")));
+        SendDouble(webView, Sel("estimatedProgress")),
+        LastError);
 
     private static IntPtr UiDelegate()
     {
@@ -100,8 +111,16 @@ internal static unsafe class WebKitBridge
             cls = objc_allocateClassPair(Class("NSObject"), "DustoreWebUIDelegate", 0);
             delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, IntPtr> create = &CreateWebViewForNewWindow;
             class_addMethod(cls, Sel("webView:createWebViewWithConfiguration:forNavigationAction:windowFeatures:"), (IntPtr)create, "@@:@@@@");
-            IntPtr protocol = objc_getProtocol("WKUIDelegate");
-            if (protocol != IntPtr.Zero) class_addProtocol(cls, protocol);
+            delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void> started = &NavigationStarted;
+            delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr, void> failed = &NavigationFailed;
+            class_addMethod(cls, Sel("webView:didStartProvisionalNavigation:"), (IntPtr)started, "v@:@@");
+            class_addMethod(cls, Sel("webView:didFailProvisionalNavigation:withError:"), (IntPtr)failed, "v@:@@@");
+            class_addMethod(cls, Sel("webView:didFailNavigation:withError:"), (IntPtr)failed, "v@:@@@");
+            foreach (string name in new[] { "WKUIDelegate", "WKNavigationDelegate" })
+            {
+                IntPtr protocol = objc_getProtocol(name);
+                if (protocol != IntPtr.Zero) class_addProtocol(cls, protocol);
+            }
             objc_registerClassPair(cls);
         }
         _delegate = Send(Send(cls, Sel("alloc")), Sel("init"));
@@ -120,6 +139,33 @@ internal static unsafe class WebKitBridge
         catch { /* An exception must never cross back into Objective-C. */ }
         return IntPtr.Zero;
     }
+
+    [UnmanagedCallersOnly]
+    private static void NavigationStarted(IntPtr self, IntPtr selector, IntPtr webView, IntPtr navigation) => LastError = null;
+
+    [UnmanagedCallersOnly]
+    private static void NavigationFailed(IntPtr self, IntPtr selector, IntPtr webView, IntPtr navigation, IntPtr error)
+    {
+        try
+        {
+            nint code = SendNint(error, Sel("code"));
+            string domain = ManagedString(Send(error, Sel("domain"))) ?? "";
+            // Cancelled loads (a newer click, a download hand-off) are not failures.
+            if (code == -999 && domain == "NSURLErrorDomain" || code == 102 && domain == "WebKitErrorDomain") return;
+            IntPtr userInfo = Send(error, Sel("userInfo"));
+            string? failingUrl = userInfo == IntPtr.Zero ? null
+                : ManagedString(Send(userInfo, Sel("objectForKey:"), NSString("NSErrorFailingURLStringKey")));
+            LastError = new WebLoadError((long)code, domain, ManagedString(Send(error, Sel("localizedDescription"))) ?? "", failingUrl);
+        }
+        catch { /* An exception must never cross back into Objective-C. */ }
+    }
 }
 
-public readonly record struct WebPageState(string Url, string Title, bool CanGoBack, bool CanGoForward, bool IsLoading, double Progress);
+public sealed record WebLoadError(long Code, string Domain, string Message, string? FailingUrl)
+{
+    /// <summary>NSURLError codes -1200…-1206: TLS and certificate trust failures.</summary>
+    public bool IsCertificateProblem => Domain == "NSURLErrorDomain" && Code is <= -1200 and >= -1206;
+    public bool IsOffline => Domain == "NSURLErrorDomain" && Code is -1009 or -1004 or -1003 or -1001;
+}
+
+public readonly record struct WebPageState(string Url, string Title, bool CanGoBack, bool CanGoForward, bool IsLoading, double Progress, WebLoadError? Error);

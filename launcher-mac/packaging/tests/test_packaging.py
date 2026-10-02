@@ -91,11 +91,12 @@ class PackagingBoundaryChecks(unittest.TestCase):
         report = {"status": "Pass", "windowOpened": True, "viewModelLoaded": True,
                   "originalLogoUnchanged": True, "clientWidth": 1180, "clientHeight": 780,
                   "libraryEntryCount": 1, "exAnalysisReady": True,
-                  "embeddedStore": {"webViewCreated": True, "url": "https://dustore.ru/explore"}}
+                  "embeddedStore": {"webViewCreated": True, "url": "https://dustore.ru/explore", "failedLoadShowsError": True}}
         validate_ui_report(report, True)
         for field, value in (("windowOpened", False), ("libraryEntryCount", 0), ("exAnalysisReady", False),
                              ("embeddedStore", None), ("embeddedStore", {"webViewCreated": False, "url": "https://dustore.ru/explore"}),
-                             ("embeddedStore", {"webViewCreated": True, "url": "about:blank"})):
+                             ("embeddedStore", {"webViewCreated": True, "url": "about:blank", "failedLoadShowsError": True}),
+                             ("embeddedStore", {"webViewCreated": True, "url": "https://dustore.ru/explore", "failedLoadShowsError": False})):
             invalid = {**report, field: value}
             with self.subTest(field=field), self.assertRaises(ValueError):
                 validate_ui_report(invalid, True)

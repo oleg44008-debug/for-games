@@ -164,6 +164,8 @@ def validate_ui_report(report: dict, require_input: bool) -> None:
     store = report.get("embeddedStore") or {}
     if store.get("webViewCreated") is not True or "dustore.ru" not in str(store.get("url", "")):
         raise ValueError("The Dustore store did not open inside the launcher's own WKWebView.")
+    if store.get("failedLoadShowsError") is not True:
+        raise ValueError("A failed in-app page load left an empty view instead of the error screen.")
 
 
 def inspect_rendered_image(image: Path, output: Path) -> dict:

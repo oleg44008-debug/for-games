@@ -31,6 +31,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _status = "Добавьте игру в библиотеку или выберите сборку в eX.";
     private string _error = "", _result = "", _runtimeVersion = "", _runtimePath = "";
     private string _webTitle = "", _webAddress = "";
+    private WebLoadError? _webError;
     private double _webProgress;
     private bool _webLoading, _webCanGoBack, _webCanGoForward;
     private bool _busy;
@@ -57,7 +58,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         JamsCommand = new RelayCommand(() => Section = "jams");
         AssetsCommand = new RelayCommand(() => Section = "assets");
         OpenInBrowserCommand = new AsyncCommand(() => PerformAsync("Открываю страницу в браузере…",
-            ct => _services.OpenUrlAsync(string.IsNullOrWhiteSpace(WebAddress) ? WebStartUrl : WebAddress, ct)), () => !IsBusy);
+            ct => _services.OpenUrlAsync(HasWebError ? WebRetryUrl : string.IsNullOrWhiteSpace(WebAddress) ? WebStartUrl : WebAddress, ct)), () => !IsBusy);
         ShelfAllCommand = new RelayCommand(() => Shelf = "all");
         ShelfReadyCommand = new RelayCommand(() => Shelf = "ready");
         ShelfExCommand = new RelayCommand(() => Shelf = "ex");
@@ -178,8 +179,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool WebCanGoBack { get => _webCanGoBack; private set => Set(ref _webCanGoBack, value); }
     public bool WebCanGoForward { get => _webCanGoForward; private set => Set(ref _webCanGoForward, value); }
 
-    public void UpdateWebState(string url, string title, bool loading, double progress, bool canGoBack, bool canGoForward)
+    public WebLoadError? WebError { get => _webError; private set { if (Set(ref _webError, value)) foreach (string p in new[] { nameof(HasWebError), nameof(WebViewVisible), nameof(WebErrorMessage), nameof(WebErrorHint) }) Notify(p); } }
+    public bool HasWebError => WebError is not null;
+    public bool WebViewVisible => IsWebSupported && !HasWebError;
+    public string WebErrorMessage => WebError?.Message ?? "";
+    public string WebErrorHint => WebError switch
     {
+        null => "",
+        { IsCertificateProblem: true } => "Защищённое соединение не установилось. Чаще всего так бывает, когда на Mac неверные дата и время: "
+            + "сертификат сайта для macOS «ещё не начал действовать». Сейчас на этом Mac: " + DateTime.Now.ToString("d MMMM yyyy, HH:mm", Russian)
+            + ". Включите «Устанавливать время и дату автоматически» в Системных настройках → Основные → Дата и время.",
+        { IsOffline: true } => "Нет связи с dustore.ru. Проверьте подключение к интернету.",
+        _ => "Попробуйте ещё раз или откройте страницу в браузере."
+    };
+    public string WebRetryUrl => WebError?.FailingUrl is { Length: > 0 } failed ? failed : WebStartUrl;
+    public void ClearWebError() => WebError = null;
+
+    public void UpdateWebState(string url, string title, bool loading, double progress, bool canGoBack, bool canGoForward, WebLoadError? error = null)
+    {
+        WebError = error;
         WebAddress = url;
         WebTitle = title;
         WebLoading = loading;

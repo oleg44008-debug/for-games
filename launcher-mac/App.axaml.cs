@@ -125,8 +125,18 @@ public partial class App : Application
             screen?.WaitForExit(15000);
         }
         catch (Exception) { capture = ""; }
+
+        // A load that cannot connect must be explained on screen, not left as an empty page.
+        web.Navigate("https://127.0.0.1:9/");
+        var failureStarted = DateTime.UtcNow;
+        while (!window.ViewModel.HasWebError && DateTime.UtcNow - failureStarted < TimeSpan.FromSeconds(20))
+            await Task.Delay(250);
+        if (!window.ViewModel.HasWebError || window.ViewModel.WebViewVisible)
+            throw new InvalidOperationException("A failed page load did not show the launcher's error screen.");
+        var failure = window.ViewModel.WebError!;
         return new
         {
+            failedLoadShowsError = true, failedLoadCode = failure.Code, failedLoadDomain = failure.Domain,
             webViewCreated = true, url = final.Url, title = final.Title, finishedLoading = !final.IsLoading,
             secondsToLoad = Math.Round((DateTime.UtcNow - started).TotalSeconds, 1),
             screenCapture = File.Exists(capture) ? capture : null, insideLauncherWindow = true

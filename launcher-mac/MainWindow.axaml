@@ -531,9 +531,27 @@
         <Panel Grid.Row="1" Height="2" Background="{StaticResource BorderSoft}">
           <ProgressBar Value="{Binding WebProgress}" Maximum="100" Height="2" MinHeight="2" IsVisible="{Binding WebLoading}" />
         </Panel>
-        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1,0,1,1">
+        <Border Grid.Row="2" Background="{StaticResource BackgroundSoft}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1,0,1,1">
           <Grid>
-            <Panel Name="SiteHost" IsVisible="{Binding IsWebSupported}" />
+            <Panel Name="SiteHost" IsVisible="{Binding WebViewVisible}" />
+            <!-- A failed load is explained instead of leaving an empty page. The native view is hidden meanwhile. -->
+            <StackPanel IsVisible="{Binding HasWebError}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" MaxWidth="560" Margin="24">
+              <Border Width="64" Height="64" CornerRadius="32" Background="{StaticResource AccentSubtle}" HorizontalAlignment="Center">
+                <Path Classes="icon" Data="{StaticResource IconLock}" Stroke="{StaticResource Orchid}" HorizontalAlignment="Center" />
+              </Border>
+              <TextBlock Classes="display" FontSize="34" Text="СТРАНИЦА НЕ ОТКРЫЛАСЬ" HorizontalAlignment="Center" />
+              <TextBlock Classes="secondary" Text="{Binding WebErrorHint}" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Classes="dim" FontSize="12" Text="{Binding WebErrorMessage}" TextWrapping="Wrap" TextAlignment="Center" />
+              <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,6,0,0">
+                <Button Classes="primary pill" Click="WebRetry_Click" Padding="22,10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Path Classes="icon" Data="{StaticResource IconReload}" />
+                    <TextBlock Text="Повторить" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="pill" Command="{Binding OpenInBrowserCommand}" Content="Открыть в браузере" />
+              </StackPanel>
+            </StackPanel>
             <StackPanel IsVisible="{Binding IsWebUnsupported}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
               <TextBlock Text="Встроенный сайт работает в macOS-версии." Foreground="{StaticResource AccentInk}" HorizontalAlignment="Center" />
               <TextBlock Text="{Binding WebStartUrl}" Foreground="{StaticResource AccentInk}" HorizontalAlignment="Center" />
