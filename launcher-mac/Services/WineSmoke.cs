@@ -46,10 +46,16 @@ internal static class WineSmoke
 
         // The package's own script must find the launcher-installed Wine without any hint.
         var run = Stopwatch.StartNew();
-        var environment = new Dictionary<string, string> { ["DUSTOREX_WINE"] = "", ["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin" };
+        // Errors and DLL loading are traced for the check only; players keep WINEDEBUG=-all.
+        var environment = new Dictionary<string, string>
+        {
+            ["DUSTOREX_WINE"] = "", ["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin", ["WINEDEBUG"] = "err+all,warn+module,fixme-all"
+        };
         var (code, output) = await WineRuntime.RunAsync(Path.Combine(app, "Contents", "MacOS", "launch"),
             new[] { "/c", "echo", Token }, environment, TimeSpan.FromMinutes(10), cancellation);
         run.Stop();
+        await File.WriteAllTextAsync(Path.Combine(workDirectory, "wine-smoke-output.txt"),
+            $"exit {code}\nwine {versionText.Trim()}\nhome {wineHome}\n\n{output}", cancellation);
         bool token = output.Contains(Token, StringComparison.Ordinal);
         if (!token) throw new InvalidOperationException($"The packaged game did not run under Wine (exit {code}): " + Tail(output));
         return new
