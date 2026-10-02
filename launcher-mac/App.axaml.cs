@@ -127,16 +127,20 @@ public partial class App : Application
         catch (Exception) { capture = ""; }
 
         // A load that cannot connect must be explained on screen, not left as an empty page.
-        web.Navigate("https://127.0.0.1:9/");
+        // Port 59999 is unused and, unlike ports such as 9, not on WebKit's restricted list.
+        web.Navigate("https://127.0.0.1:59999/");
         var failureStarted = DateTime.UtcNow;
         while (!window.ViewModel.HasWebError && DateTime.UtcNow - failureStarted < TimeSpan.FromSeconds(20))
             await Task.Delay(250);
         if (!window.ViewModel.HasWebError || window.ViewModel.WebViewVisible)
-            throw new InvalidOperationException("A failed page load did not show the launcher's error screen.");
+            throw new InvalidOperationException("A failed page load did not show the launcher's error screen. "
+                + $"started={Services.WebKitBridge.StartedCount} failed={Services.WebKitBridge.FailedCount} raw='{Services.WebKitBridge.LastRawFailure}' "
+                + $"url='{web.State.Url}' loading={web.State.IsLoading} bridgeError={(Services.WebKitBridge.LastError is null ? "none" : "set")}");
         var failure = window.ViewModel.WebError!;
         return new
         {
             failedLoadShowsError = true, failedLoadCode = failure.Code, failedLoadDomain = failure.Domain,
+            navigationCallbacks = new { started = Services.WebKitBridge.StartedCount, failed = Services.WebKitBridge.FailedCount },
             webViewCreated = true, url = final.Url, title = final.Title, finishedLoading = !final.IsLoading,
             secondsToLoad = Math.Round((DateTime.UtcNow - started).TotalSeconds, 1),
             screenCapture = File.Exists(capture) ? capture : null, insideLauncherWindow = true

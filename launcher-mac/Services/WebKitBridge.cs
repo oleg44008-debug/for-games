@@ -40,6 +40,10 @@ internal static unsafe class WebKitBridge
 
     /// <summary>The last page load that failed, cleared when a new navigation starts.</summary>
     public static WebLoadError? LastError { get; private set; }
+    /// <summary>Delegate callback counts and the last raw failure, for verification reports.</summary>
+    public static int StartedCount { get; private set; }
+    public static int FailedCount { get; private set; }
+    public static string LastRawFailure { get; private set; } = "";
 
     private static IntPtr Class(string name) => objc_getClass(name);
     private static IntPtr Sel(string name) => sel_registerName(name);
@@ -141,15 +145,21 @@ internal static unsafe class WebKitBridge
     }
 
     [UnmanagedCallersOnly]
-    private static void NavigationStarted(IntPtr self, IntPtr selector, IntPtr webView, IntPtr navigation) => LastError = null;
+    private static void NavigationStarted(IntPtr self, IntPtr selector, IntPtr webView, IntPtr navigation)
+    {
+        StartedCount++;
+        LastError = null;
+    }
 
     [UnmanagedCallersOnly]
     private static void NavigationFailed(IntPtr self, IntPtr selector, IntPtr webView, IntPtr navigation, IntPtr error)
     {
         try
         {
+            FailedCount++;
             nint code = SendNint(error, Sel("code"));
             string domain = ManagedString(Send(error, Sel("domain"))) ?? "";
+            LastRawFailure = domain + " " + code;
             // Cancelled loads (a newer click, a download hand-off) are not failures.
             if (code == -999 && domain == "NSURLErrorDomain" || code == 102 && domain == "WebKitErrorDomain") return;
             IntPtr userInfo = Send(error, Sel("userInfo"));

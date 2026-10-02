@@ -8,7 +8,7 @@
                   },
                   {
                       "path":  "App.axaml.cs",
-                      "sha256":  "2319b3909545e8cdbb15f7f82c983fb8fbc68be3bbc4d74a492574c783873e0b"
+                      "sha256":  "adc5d67dde3fb0be6939430b8b188e7b9b528061176a5df605f79f63239397eb"
                   },
                   {
                       "path":  "ci-status.py",
@@ -124,7 +124,7 @@
                   },
                   {
                       "path":  "Services/WebKitBridge.cs",
-                      "sha256":  "aac9b3afa706b8e2440ead34f6a961bafb2d324c9bc90c5fad09e8201f01fcaf"
+                      "sha256":  "e375b7cf4342a54ff503343d3845846de86a09f2ea07b5ce4886aa97f2a00c42"
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
