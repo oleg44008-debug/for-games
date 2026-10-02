@@ -71,6 +71,7 @@ public partial class App : Application
                         settingsBitmap.Render(window);
                         string settingsImagePath = Path.ChangeExtension(Program.SmokeReportPath, ".settings.png");
                         settingsBitmap.Save(settingsImagePath);
+                        var web = await VerifyEmbeddedStoreAsync(window);
                         Program.WriteReport(new
                         {
                             status = "Pass", product = "DUSTORE LAUNCHER V", mode = "native-desktop-ui-startup",
@@ -83,6 +84,7 @@ public partial class App : Application
                             exAnalysisReady = Program.SmokeInputPath is not null && window.ViewModel.CanConvert,
                             viewModelLoaded = true, libraryEntryCount = window.ViewModel.Games.Count,
                             originalLogoUnchanged = Program.OriginalLogoUnchanged(),
+                            embeddedStore = web,
                             verifiedAtUtc = DateTimeOffset.UtcNow
                         });
                         desktop.Shutdown(0);
@@ -95,6 +97,40 @@ public partial class App : Application
                 };
         }
         base.OnFrameworkInitializationCompleted();
+    }
+
+    // Opens the store section and waits for dustore.ru inside the window's own WKWebView.
+    private static async Task<object> VerifyEmbeddedStoreAsync(MainWindow window)
+    {
+        window.ViewModel.Section = "store";
+        if (window.WebView is not { } web)
+            throw new InvalidOperationException("The in-app store web view was not created on macOS.");
+        var started = DateTime.UtcNow;
+        while (DateTime.UtcNow - started < TimeSpan.FromSeconds(45))
+        {
+            await Task.Delay(500);
+            var state = web.State;
+            if (web.IsCreated && state.Url.StartsWith("https://", StringComparison.Ordinal) && !state.IsLoading && state.Title.Length > 0) break;
+        }
+        if (!web.IsCreated)
+            throw new InvalidOperationException("WKWebView was not created inside the launcher window.");
+        var final = web.State;
+        if (!Uri.TryCreate(final.Url, UriKind.Absolute, out var url) || !url.Host.EndsWith("dustore.ru", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The in-app store did not navigate to dustore.ru: '" + final.Url + "'.");
+        // A desktop capture shows the native web view, which RenderTargetBitmap cannot draw.
+        string capture = Path.ChangeExtension(Program.SmokeReportPath, ".store.png");
+        try
+        {
+            using var screen = System.Diagnostics.Process.Start("/usr/sbin/screencapture", new[] { "-x", capture });
+            screen?.WaitForExit(15000);
+        }
+        catch (Exception) { capture = ""; }
+        return new
+        {
+            webViewCreated = true, url = final.Url, title = final.Title, finishedLoading = !final.IsLoading,
+            secondsToLoad = Math.Round((DateTime.UtcNow - started).TotalSeconds, 1),
+            screenCapture = File.Exists(capture) ? capture : null, insideLauncherWindow = true
+        };
     }
 
     private static Window CreateStartupFailureWindow(Exception error)

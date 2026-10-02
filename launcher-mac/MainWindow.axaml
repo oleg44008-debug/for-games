@@ -1,225 +1,568 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DustoreLauncherV.Mac.ViewModels"
+        xmlns:c="using:DustoreLauncherV.Mac.Controls"
         x:Class="DustoreLauncherV.Mac.MainWindow"
         x:CompileBindings="False"
         Title="DUSTORE LAUNCHER V"
-        Width="1180" Height="760" MinWidth="880" MinHeight="620"
+        Width="1180" Height="760" MinWidth="940" MinHeight="640"
         WindowStartupLocation="CenterScreen"
-        Background="#0A101B">
-  <Window.Styles>
-    <Style Selector="TextBlock">
-      <Setter Property="Foreground" Value="#E7EFF9" />
-      <Setter Property="FontSize" Value="14" />
-    </Style>
-    <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="#91A2BA" /></Style>
-    <Style Selector="TextBlock.eyebrow"><Setter Property="Foreground" Value="#6DCCEB" /><Setter Property="FontSize" Value="11" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
-    <Style Selector="TextBlock.title"><Setter Property="FontSize" Value="28" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
-    <Style Selector="Button">
-      <Setter Property="Background" Value="#182438" /><Setter Property="Foreground" Value="#E7EFF9" />
-      <Setter Property="BorderBrush" Value="#2A3B54" /><Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="7" /><Setter Property="Padding" Value="16,10" />
-      <Setter Property="MinHeight" Value="40" /><Setter Property="HorizontalContentAlignment" Value="Center" />
-    </Style>
-    <Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#243A51" /></Style>
-    <Style Selector="Button.primary"><Setter Property="Background" Value="#20A9D8" /><Setter Property="Foreground" Value="#06131E" /><Setter Property="BorderBrush" Value="#4DC6E8" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
-    <Style Selector="Button.primary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#50C6E7" /></Style>
-    <Style Selector="Button.nav"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="HorizontalContentAlignment" Value="Left" /><Setter Property="Padding" Value="16,12" /></Style>
-    <Style Selector="TextBox"><Setter Property="Background" Value="#0C1522" /><Setter Property="BorderBrush" Value="#2C3A50" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Foreground" Value="#ECF3FB" /><Setter Property="MinHeight" Value="40" /><Setter Property="Padding" Value="12,9" /></Style>
-    <Style Selector="ComboBox"><Setter Property="Background" Value="#0C1522" /><Setter Property="BorderBrush" Value="#2C3A50" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Foreground" Value="#ECF3FB" /><Setter Property="MinHeight" Value="40" /><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
-    <Style Selector="Border.card"><Setter Property="Background" Value="#111D2E" /><Setter Property="BorderBrush" Value="#24354C" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="22" /></Style>
-    <Style Selector="ListBox"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
-    <Style Selector="ListBoxItem"><Setter Property="Padding" Value="10" /><Setter Property="Margin" Value="0,0,0,4" /><Setter Property="CornerRadius" Value="7" /></Style>
-    <Style Selector="ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="#173754" /><Setter Property="BorderBrush" Value="#32B9E2" /><Setter Property="BorderThickness" Value="1" /></Style>
-  </Window.Styles>
+        Background="{StaticResource Background}"
+        Foreground="{StaticResource TextPrimary}">
 
-  <Grid RowDefinitions="76,*,Auto">
-    <Border Grid.Row="0" Background="#101B2A" BorderBrush="#26364A" BorderThickness="0,0,0,1" Padding="24,12">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-          <Image Source="avares://DustoreLauncherV.Mac/Assets/dustore-logo-original.png" Width="50" Height="42" Stretch="Uniform" />
-          <StackPanel Spacing="1" VerticalAlignment="Center">
-            <TextBlock FontSize="21" FontWeight="Bold" Text="DUSTORE V" />
-            <TextBlock Classes="eyebrow" Text="LAUNCHER · macOS" />
+  <Grid ColumnDefinitions="236,*">
+
+    <!-- ===== Left rail ===== -->
+    <Border Background="{StaticResource NavBackground}" PointerPressed="DragArea_PointerPressed">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="14,0,14,16">
+        <StackPanel Spacing="4">
+          <!-- Room for the macOS window buttons that sit over the extended client area. -->
+          <Border Height="34" Background="Transparent" />
+          <StackPanel Orientation="Horizontal" Spacing="12" Margin="8,0,0,26">
+            <Image Source="avares://DustoreLauncherV.Mac/Assets/dustore-logo-original.png" Width="44" Height="38" Stretch="Uniform" />
+            <StackPanel VerticalAlignment="Center" Spacing="0">
+              <TextBlock Classes="display" FontSize="25" LineHeight="26">
+                <Run Text="DUSTORE " /><Run Text="V" Foreground="{StaticResource Accent}" />
+              </TextBlock>
+              <TextBlock Classes="eyebrow" FontSize="10" Text="{Binding RailVersion}" />
+            </StackPanel>
           </StackPanel>
+
+          <TextBlock Classes="eyebrow" Text="ИГРЫ" Margin="12,0,0,6" />
+          <Button Name="LibraryNav" Classes="nav" Classes.selected="{Binding IsLibrary}" Command="{Binding LibraryCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconLibrary}" />
+                <TextBlock Text="Библиотека" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Name="ExNav" Classes="nav" Classes.selected="{Binding IsEx}" Command="{Binding ExCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconEx}" />
+                <TextBlock Text="eX" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+
+          <TextBlock Classes="eyebrow" Text="МАГАЗИН DUSTORE" Margin="12,18,0,6" />
+          <Button Name="StoreNav" Classes="nav" Classes.selected="{Binding IsStore}" Command="{Binding StoreCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconStore}" />
+                <TextBlock Text="Магазин" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Classes="nav" Classes.selected="{Binding IsHome}" Command="{Binding HomeCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconHome}" />
+                <TextBlock Text="Главная Dustore" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Classes="nav" Classes.selected="{Binding IsJams}" Command="{Binding JamsCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconSprint}" />
+                <TextBlock Text="Спринты" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Classes="nav" Classes.selected="{Binding IsAssets}" Command="{Binding AssetsCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconAssets}" />
+                <TextBlock Text="Ассеты" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
         </StackPanel>
-        <TextBlock Grid.Column="2" Classes="muted" Text="{Binding PlatformLabel}" VerticalAlignment="Center" />
+
+        <StackPanel Grid.Row="2" Spacing="12">
+          <Button Name="SettingsNav" Classes="nav" Classes.selected="{Binding IsSettings}" Command="{Binding SettingsCommand}">
+            <Grid>
+              <Border Classes="navbar" Width="3" Height="22" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" Margin="-12,0,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="13">
+                <Path Classes="icon" Data="{StaticResource IconSettings}" />
+                <TextBlock Text="Настройки" VerticalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Border Background="{StaticResource BackgroundSoft}" CornerRadius="12" Padding="14,10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Mac" FontWeight="SemiBold" FontSize="13" />
+              <TextBlock Classes="dim" FontSize="12" Text="{Binding PlatformLabel}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
       </Grid>
     </Border>
 
-    <Grid Grid.Row="1" ColumnDefinitions="208,*">
-      <Border Background="#0D1623" BorderBrush="#223044" BorderThickness="0,0,1,0" Padding="14,24,14,18">
-        <Grid RowDefinitions="Auto,*,Auto">
-          <StackPanel Spacing="7">
-            <TextBlock Classes="eyebrow" Text="ВАШИ ИГРЫ" Margin="16,0,0,12" />
-            <Button Name="LibraryNav" Classes="nav" Content="Библиотека" Command="{Binding LibraryCommand}" />
-            <Button Name="ExNav" Classes="nav" Content="eX · перенос игр" Command="{Binding ExCommand}" />
-            <Button Classes="nav" Command="{Binding StoreCommand}" ToolTip.Tip="Открыть Dustore в браузере">
-              <StackPanel Spacing="2"><TextBlock Text="Магазин Dustore ↗" /><TextBlock Classes="muted" FontSize="11" Text="Откроется в браузере" /></StackPanel>
-            </Button>
-            <Separator Background="#243348" Margin="12,16" />
-            <Button Name="SettingsNav" Classes="nav" Content="Настройки" Command="{Binding SettingsCommand}" />
+    <!-- ===== Main column ===== -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,*">
+
+      <!-- Top bar: section name with the pink underline; draggable like a title bar. -->
+      <Border Background="Transparent" Padding="36,26,28,14" PointerPressed="DragArea_PointerPressed">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="18">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="display" FontSize="27" LetterSpacing="1.4" Text="{Binding HeaderTitle, Converter={x:Static c:Converters.Upper}}" />
+              <Border Width="72" Height="3" CornerRadius="2" Background="{StaticResource Orchid}" HorizontalAlignment="Left" />
+            </StackPanel>
+            <TextBlock Classes="dim" FontSize="13" Text="{Binding HeaderSubtitle}" VerticalAlignment="Top" Margin="0,8,0,0"
+                       MaxWidth="460" TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <StackPanel Grid.Row="2" Spacing="8" Margin="14,0">
-            <TextBlock Classes="muted" FontSize="12" Text="Библиотека и eX работают внутри приложения." TextWrapping="Wrap" />
-            <TextBlock Classes="eyebrow" Text="WINDOWS ↔ macOS" />
-          </StackPanel>
+          <Grid Grid.Column="2" IsVisible="{Binding ShowSearch}" Width="320" VerticalAlignment="Top">
+            <TextBox Classes="search" Name="SearchBox" Watermark="Поиск в библиотеке" Text="{Binding Search, Mode=TwoWay}" />
+            <Path Classes="icon" Data="{StaticResource IconSearch}" Stroke="{StaticResource TextDim}" HorizontalAlignment="Left" Margin="12,0,0,0" IsHitTestVisible="False" />
+          </Grid>
         </Grid>
       </Border>
 
-      <Grid Grid.Column="1" IsVisible="{Binding IsLibrary}" Margin="24">
-        <Grid RowDefinitions="Auto,*">
-          <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,20">
-            <StackPanel Spacing="4"><TextBlock Classes="title" Text="Библиотека" /><TextBlock Classes="muted" Text="{Binding LibraryCount}" /></StackPanel>
-            <Button Grid.Column="1" Margin="12,0,8,0" Content="Добавить файл" Click="AddGameFile_Click" IsEnabled="{Binding NotBusy}" VerticalAlignment="Center" />
-            <Button Grid.Column="2" Classes="primary" Content="Добавить .app / папку" Click="AddGameFolder_Click" IsEnabled="{Binding NotBusy}" VerticalAlignment="Center" />
-          </Grid>
-          <Grid Grid.Row="1" ColumnDefinitions="240,18,*">
-            <Border Classes="card" Padding="12">
-              <Grid RowDefinitions="Auto,Auto,*,Auto">
-                <TextBox Watermark="Поиск в библиотеке" Text="{Binding Search, Mode=TwoWay}" />
-                <TextBlock Grid.Row="1" Classes="muted" FontSize="11" Text="{Binding FilterCount}" Margin="5,12" />
-                <ListBox Grid.Row="2" Name="GamesList" ItemsSource="{Binding Games}" SelectedItem="{Binding SelectedGame, Mode=TwoWay}" DoubleTapped="GamesList_DoubleTapped">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate DataType="vm:GameItemViewModel">
-                      <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Text="{Binding Status}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+      <!-- ===== Library ===== -->
+      <Grid Grid.Row="1" IsVisible="{Binding IsLibrary}">
+
+        <!-- Empty library -->
+        <StackPanel IsVisible="{Binding IsLibraryEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="18" Margin="32,0,32,60">
+          <Image Source="avares://DustoreLauncherV.Mac/Assets/dustore-logo-original.png" Width="118" Height="100" Stretch="Uniform" />
+          <TextBlock Classes="display" FontSize="54" LetterSpacing="2" Text="ПОКА ЗДЕСЬ ПУСТО" HorizontalAlignment="Center" />
+          <StackPanel Spacing="6">
+            <TextBlock Classes="secondary" Text="Добавьте игру с компьютера или найдите её в магазине Dustore." HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Classes="dim" Text="Готовое приложение .app запускается сразу, Windows-сборку перенесёт eX." HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+          <WrapPanel HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Button Classes="primary pill" Click="AddGameFile_Click" IsEnabled="{Binding NotBusy}" MinHeight="56" Padding="26,0" Margin="6">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Path Classes="icon" Data="{StaticResource IconPlus}" StrokeThickness="2.2" />
+                <TextBlock Classes="display" FontSize="21" Text="ДОБАВИТЬ ИГРУ" Foreground="{StaticResource AccentInk}" VerticalAlignment="Center" Margin="0,3,0,0" />
+              </StackPanel>
+            </Button>
+            <Button Classes="pill" Click="AddGameFolder_Click" IsEnabled="{Binding NotBusy}" MinHeight="56" Padding="22,0" Margin="6">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Path Classes="icon" Data="{StaticResource IconFolder}" />
+                <TextBlock Text="Добавить .app / папку" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Classes="ghost pill" Command="{Binding StoreCommand}" MinHeight="56" Padding="18,0" Margin="6" Content="Открыть магазин" />
+          </WrapPanel>
+        </StackPanel>
+
+        <ScrollViewer IsVisible="{Binding HasGames}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="26" Margin="36,6,32,32">
+
+            <!-- Hero: the open game. -->
+            <Border Background="{StaticResource Surface}" CornerRadius="20" ClipToBounds="True" MinHeight="300" IsVisible="{Binding HasSelection}">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Margin="34,32,24,30" Spacing="18" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding SelectedReady}" VerticalAlignment="Center">
+                      <Ellipse Width="8" Height="8" Fill="{StaticResource Success}" />
+                      <TextBlock Classes="eyebrow" Foreground="{StaticResource Success}" Text="{Binding SelectedStateLabel}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding SelectedNeedsEx}" VerticalAlignment="Center">
+                      <Ellipse Width="8" Height="8" Fill="{StaticResource Warning}" />
+                      <TextBlock Classes="eyebrow" Foreground="{StaticResource Warning}" Text="{Binding SelectedStateLabel}" />
+                    </StackPanel>
+                    <Border Classes="chip"><TextBlock Classes="eyebrow" FontSize="10" Foreground="{StaticResource TextSecondary}" Text="{Binding SelectedKind}" /></Border>
+                  </StackPanel>
+                  <TextBlock Classes="display" FontSize="68" LineHeight="66" Text="{Binding SelectedTitle, Converter={x:Static c:Converters.Upper}}"
+                             TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                  <WrapPanel Orientation="Horizontal">
+                    <Button Classes="primary pill" Command="{Binding LaunchCommand}" MinWidth="220" Height="58" CornerRadius="29" Margin="0,0,14,10"
+                            IsVisible="{Binding SelectedReady}" ToolTip.Tip="Запустить игру">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Path Classes="icon fill" Data="{StaticResource IconPlay}" StrokeThickness="1.4" />
+                        <TextBlock Classes="display" FontSize="24" Text="{Binding LaunchLabel}" Foreground="{StaticResource AccentInk}" VerticalAlignment="Center" Margin="0,4,0,0" />
                       </StackPanel>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
-                <Button Grid.Row="3" Content="Обновить" Command="{Binding RefreshCommand}" Margin="0,8,0,0" />
+                    </Button>
+                    <Button Classes="primary pill" Command="{Binding ConvertGameCommand}" MinWidth="220" Height="58" CornerRadius="29" Margin="0,0,14,10"
+                            IsVisible="{Binding SelectedNeedsEx}" ToolTip.Tip="Создать macOS-пакет через eX">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Path Classes="icon" Data="{StaticResource IconEx}" StrokeThickness="2.2" />
+                        <TextBlock Classes="display" FontSize="24" Text="ПЕРЕНЕСТИ В eX" Foreground="{StaticResource AccentInk}" VerticalAlignment="Center" Margin="0,4,0,0" />
+                      </StackPanel>
+                    </Button>
+                    <Button Classes="round" Command="{Binding ConvertGameCommand}" Margin="0,3,10,10" ToolTip.Tip="Перенести через eX" IsVisible="{Binding SelectedReady}">
+                      <TextBlock Classes="display" FontSize="19" Text="eX" Foreground="{StaticResource Accent}" Margin="0,3,0,0" />
+                    </Button>
+                    <Button Classes="round" Command="{Binding RevealGameCommand}" Margin="0,3,10,10" ToolTip.Tip="Показать в Finder">
+                      <Path Classes="icon" Data="{StaticResource IconFolder}" />
+                    </Button>
+                    <Button Classes="round" Command="{Binding RemoveGameCommand}" Margin="0,3,10,10" ToolTip.Tip="Убрать из библиотеки. Файлы игры останутся на диске.">
+                      <Path Classes="icon" Data="{StaticResource IconTrash}" />
+                    </Button>
+                  </WrapPanel>
+                  <Grid ColumnDefinitions="Auto,Auto,Auto" Margin="0,2,0,0">
+                    <StackPanel Spacing="3" Margin="0,0,34,0">
+                      <TextBlock Classes="display" FontSize="22" Text="{Binding SelectedLastPlayed}" />
+                      <TextBlock Classes="eyebrow" FontSize="10" Text="ПОСЛЕДНИЙ ЗАПУСК" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Width="1" Background="{StaticResource BorderMid}" Margin="0,4,34,4" />
+                    <StackPanel Grid.Column="2" Spacing="3">
+                      <TextBlock Classes="display" FontSize="22" Text="{Binding SelectedAdded}" />
+                      <TextBlock Classes="eyebrow" FontSize="10" Text="В БИБЛИОТЕКЕ С" />
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+                <!-- Cover: the app's own icon, or a flat monogram plate. -->
+                <Border Grid.Column="1" Width="300" Background="{StaticResource BackgroundSoft}">
+                  <Grid>
+                    <Image Source="{Binding SelectedCover}" IsVisible="{Binding SelectedHasCover}" Width="210" Height="210" Stretch="Uniform" />
+                    <Border IsVisible="{Binding SelectedNoCover}" Width="190" Height="190" CornerRadius="36" Background="{StaticResource AccentSubtle}">
+                      <TextBlock Classes="display" FontSize="120" Text="{Binding SelectedMonogram}" Foreground="{StaticResource Orchid}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,18,0,0" />
+                    </Border>
+                  </Grid>
+                </Border>
               </Grid>
             </Border>
-            <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-              <StackPanel Spacing="16">
-                <Border Classes="card" IsVisible="{Binding NoSelection}" Padding="28">
-                  <StackPanel Spacing="18">
-                    <TextBlock Classes="eyebrow" Text="ВСЁ НАЧИНАЕТСЯ С ИГРЫ" />
-                    <TextBlock FontSize="24" FontWeight="SemiBold" Text="Добавьте свою первую игру" TextWrapping="Wrap" />
-                    <TextBlock Classes="muted" Text="Выберите готовое приложение .app, ZIP игры или исходную Windows-сборку. eX проверит возможность переноса для Mac." TextWrapping="Wrap" />
-                    <Button Classes="primary" Content="Выбрать игру" Click="AddGameFile_Click" IsEnabled="{Binding NotBusy}" HorizontalAlignment="Left" />
-                  </StackPanel>
-                </Border>
-                <StackPanel Spacing="16" IsVisible="{Binding HasSelection}">
-                  <Border Classes="card" Padding="28">
-                    <StackPanel Spacing="16">
-                      <TextBlock Classes="eyebrow" Text="ВАША ИГРА" />
-                      <TextBlock Classes="title" Text="{Binding SelectedTitle}" TextWrapping="Wrap" />
-                      <TextBlock Classes="muted" Text="{Binding SelectedStatus}" TextWrapping="Wrap" />
-                      <WrapPanel Orientation="Horizontal">
-                        <Button Classes="primary" Content="{Binding LaunchLabel}" Command="{Binding LaunchCommand}" MinWidth="152" MinHeight="48" Margin="0,0,10,10" />
-                        <Button Content="Перенести через eX" Command="{Binding ConvertGameCommand}" Margin="0,0,10,10" />
-                        <Button Content="Папка" Command="{Binding RevealGameCommand}" Margin="0,0,0,10" />
-                      </WrapPanel>
-                      <TextBlock Classes="muted" Text="{Binding LaunchHint}" TextWrapping="Wrap" FontSize="12" />
+
+            <!-- Shelf header: tabs and add buttons. -->
+            <StackPanel Spacing="16">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="28">
+                  <Button Classes="tab" Classes.selected="{Binding IsShelfAll}" Command="{Binding ShelfAllCommand}">
+                    <StackPanel Spacing="9">
+                      <StackPanel Orientation="Horizontal" Spacing="9">
+                        <TextBlock Classes="display tabtext" FontSize="19" Text="ВСЕ ИГРЫ" />
+                        <Border Background="{StaticResource AccentSubtle}" CornerRadius="9" Padding="7,1" VerticalAlignment="Center"><TextBlock FontSize="11" Text="{Binding CountAll}" /></Border>
+                      </StackPanel>
+                      <Border Classes="underline" Height="3" CornerRadius="2" Background="{StaticResource Orchid}" />
                     </StackPanel>
-                  </Border>
-                  <Border Classes="card">
-                    <StackPanel Spacing="12">
-                      <TextBlock FontWeight="SemiBold" Text="Файлы и история" />
-                      <TextBlock Classes="muted" FontSize="11" Text="ИСХОДНАЯ СБОРКА" />
-                      <SelectableTextBlock Text="{Binding SelectedSource}" Foreground="#BACADD" TextWrapping="Wrap" FontSize="12" />
-                      <Grid ColumnDefinitions="*,*" Margin="0,8,0,4">
-                        <StackPanel Spacing="5"><TextBlock Classes="muted" FontSize="11" Text="ДОБАВЛЕНА" /><TextBlock Text="{Binding SelectedAdded}" FontSize="12" /></StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="5"><TextBlock Classes="muted" FontSize="11" Text="ПОСЛЕДНИЙ ЗАПУСК" /><TextBlock Text="{Binding SelectedLastPlayed}" FontSize="12" TextWrapping="Wrap" /></StackPanel>
-                      </Grid>
-                      <Button Content="Убрать из библиотеки" Command="{Binding RemoveGameCommand}" HorizontalAlignment="Left" ToolTip.Tip="Удаляется только запись. Исходные файлы остаются на диске." />
+                  </Button>
+                  <Button Classes="tab" Classes.selected="{Binding IsShelfReady}" Command="{Binding ShelfReadyCommand}">
+                    <StackPanel Spacing="9">
+                      <StackPanel Orientation="Horizontal" Spacing="9">
+                        <TextBlock Classes="display tabtext" FontSize="19" Text="ГОТОВЫ" />
+                        <Border Background="{StaticResource AccentSubtle}" CornerRadius="9" Padding="7,1" VerticalAlignment="Center"><TextBlock FontSize="11" Text="{Binding CountReady}" /></Border>
+                      </StackPanel>
+                      <Border Classes="underline" Height="3" CornerRadius="2" Background="{StaticResource Orchid}" />
                     </StackPanel>
-                  </Border>
+                  </Button>
+                  <Button Classes="tab" Classes.selected="{Binding IsShelfEx}" Command="{Binding ShelfExCommand}">
+                    <StackPanel Spacing="9">
+                      <StackPanel Orientation="Horizontal" Spacing="9">
+                        <TextBlock Classes="display tabtext" FontSize="19" Text="НУЖЕН eX" />
+                        <Border Background="{StaticResource AccentSubtle}" CornerRadius="9" Padding="7,1" VerticalAlignment="Center"><TextBlock FontSize="11" Text="{Binding CountEx}" /></Border>
+                      </StackPanel>
+                      <Border Classes="underline" Height="3" CornerRadius="2" Background="{StaticResource Orchid}" />
+                    </StackPanel>
+                  </Button>
                 </StackPanel>
-              </StackPanel>
-            </ScrollViewer>
-          </Grid>
-        </Grid>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
+                  <Button Classes="pill" Click="AddGameFolder_Click" IsEnabled="{Binding NotBusy}" ToolTip.Tip="Добавить приложение .app или папку игры">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Path Classes="icon" Data="{StaticResource IconFolder}" />
+                      <TextBlock Text=".app / папка" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="outline" Click="AddGameFile_Click" IsEnabled="{Binding NotBusy}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Path Classes="icon" Data="{StaticResource IconPlus}" StrokeThickness="2.1" />
+                      <TextBlock Text="Добавить игру" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+              </Grid>
+              <Border Height="1" Background="{StaticResource BorderSoft}" Margin="0,-17,0,0" ZIndex="-1" />
+
+              <TextBlock Classes="dim" IsVisible="{Binding ShelfEmpty}" Text="В этой вкладке пока нет игр." Margin="2,4" />
+              <ItemsControl Name="Shelf" ItemsSource="{Binding ShelfItems}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.DataTemplates>
+                  <DataTemplate DataType="vm:GameItemViewModel">
+                    <Button Classes="tile" Classes.selected="{Binding IsSelected}" Width="230" Height="176" Margin="0,0,16,16"
+                            Command="{Binding $parent[ItemsControl].DataContext.SelectGameCommand}" CommandParameter="{Binding}"
+                            DoubleTapped="Tile_DoubleTapped" ToolTip.Tip="{Binding Status}">
+                      <Grid RowDefinitions="*,Auto">
+                        <Border Background="{StaticResource BackgroundSoft}">
+                          <Grid>
+                            <Image Source="{Binding Cover}" IsVisible="{Binding HasCover}" Width="88" Height="88" Stretch="Uniform" />
+                            <TextBlock IsVisible="{Binding NoCover}" Classes="display" FontSize="58" Text="{Binding Monogram}" Foreground="{StaticResource BorderStrong}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0" />
+                          </Grid>
+                        </Border>
+                        <StackPanel Grid.Row="1" Margin="14,10,14,12" Spacing="3">
+                          <TextBlock Classes="display" FontSize="19" Text="{Binding Name, Converter={x:Static c:Converters.Upper}}" TextTrimming="CharacterEllipsis" />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource Success}" IsVisible="{Binding CanLaunch}" />
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource Warning}" IsVisible="{Binding !CanLaunch}" />
+                            <TextBlock Classes="eyebrow" FontSize="10" Text="{Binding ShortStatus}" Foreground="{StaticResource TextSecondary}" />
+                          </StackPanel>
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                  <DataTemplate DataType="vm:AddGameTile">
+                    <Button Classes="addtile" Width="230" Height="176" Margin="0,0,16,16" Click="AddGameFile_Click"
+                            IsEnabled="{Binding $parent[ItemsControl].DataContext.NotBusy}" ToolTip.Tip="Добавить игру в библиотеку">
+                      <Grid>
+                        <Rectangle Stroke="{StaticResource BorderMid}" StrokeThickness="1.5" StrokeDashArray="5,4" RadiusX="14" RadiusY="14" />
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                          <Border Width="50" Height="50" CornerRadius="25" Background="{StaticResource Surface}" HorizontalAlignment="Center">
+                            <Path Classes="icon" Data="{StaticResource IconPlus}" HorizontalAlignment="Center" />
+                          </Border>
+                          <TextBlock Classes="eyebrow" Text="ДОБАВИТЬ ИГРУ" HorizontalAlignment="Center" />
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.DataTemplates>
+              </ItemsControl>
+            </StackPanel>
+
+            <!-- Where the open game lives. -->
+            <Border Classes="card" IsVisible="{Binding HasSelection}">
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                <Path Classes="icon" Data="{StaticResource IconFile}" Stroke="{StaticResource TextDim}" Margin="0,0,14,0" VerticalAlignment="Top" />
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <TextBlock Classes="eyebrow" Text="ИСХОДНАЯ СБОРКА" />
+                  <SelectableTextBlock Text="{Binding SelectedSource}" TextWrapping="Wrap" />
+                  <TextBlock Classes="dim" FontSize="12" Text="{Binding LaunchHint}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
       </Grid>
 
-      <Grid Grid.Column="1" IsVisible="{Binding IsEx}" Margin="24" RowDefinitions="Auto,*,Auto">
-        <StackPanel Spacing="5" Margin="0,0,0,18">
-          <TextBlock Classes="eyebrow" Text="WINDOWS ↔ macOS" />
-          <TextBlock Classes="title" Text="eX · перенос игр" />
-          <TextBlock Classes="muted" Text="Проверка сборки, подбор движка и создание отдельного ZIP." TextWrapping="Wrap" />
-        </StackPanel>
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <StackPanel Spacing="16" Margin="0,0,8,16">
-            <Border Classes="card">
-              <StackPanel Spacing="12">
-                <TextBlock FontWeight="SemiBold" Text="1 · Исходная игра" />
-                <TextBox Watermark="Путь к .exe, .app, .zip, .pck или папке игры" Text="{Binding SourcePath, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
-                <WrapPanel>
-                  <Button Content="Выбрать файл" Click="SelectSourceFile_Click" IsEnabled="{Binding NotBusy}" Margin="0,0,8,0" />
-                  <Button Content="Выбрать .app / папку" Click="SelectSourceFolder_Click" IsEnabled="{Binding NotBusy}" Margin="0,0,8,0" />
-                  <Button Content="Анализировать" Command="{Binding AnalyzeCommand}" />
-                </WrapPanel>
+      <!-- ===== eX ===== -->
+      <Grid Grid.Row="1" IsVisible="{Binding IsEx}" RowDefinitions="*,Auto">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="18" Margin="36,6,32,24">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Border Width="54" Height="54" CornerRadius="14" Background="{StaticResource AccentSubtle}">
+                <TextBlock Classes="display" FontSize="28" Text="eX" Foreground="{StaticResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5,0,0" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" Spacing="2">
+                <TextBlock FontSize="22" FontWeight="SemiBold" Text="Перенос игр" />
+                <TextBlock Classes="dim" Text="Ваша игра. Другая платформа. Исходные файлы остаются на месте." />
               </StackPanel>
-            </Border>
+              <Border Grid.Column="2" Classes="chip" BorderBrush="{StaticResource Accent}" Padding="14,6">
+                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Accent}" Text="{Binding PlanFacts}" />
+              </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,18,*">
+              <Border Classes="card">
+                <StackPanel Spacing="14">
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="Исходная игра" />
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Border Width="58" Height="58" CornerRadius="12" Background="{StaticResource Surface}">
+                      <Path Classes="icon" Data="{StaticResource IconFile}" HorizontalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Classes="display" FontSize="22" Text="{Binding SourceDisplayName, Converter={x:Static c:Converters.Upper}}" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                      <TextBlock Classes="dim" FontSize="12" Text=".exe · .app · .zip · .pck · папка игры" />
+                    </StackPanel>
+                  </StackPanel>
+                  <TextBox Watermark="Путь к игре" Text="{Binding SourcePath, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
+                  <WrapPanel>
+                    <Button Classes="pill" Click="SelectSourceFile_Click" IsEnabled="{Binding NotBusy}" Margin="0,0,8,8" Content="Файл…" MinWidth="96" />
+                    <Button Classes="pill" Click="SelectSourceFolder_Click" IsEnabled="{Binding NotBusy}" Margin="0,0,8,8" Content=".app / папка…" />
+                    <Button Classes="ghost pill" Command="{Binding AnalyzeCommand}" Margin="0,0,0,8" Content="Проверить снова" />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="2" Classes="card">
+                <StackPanel Spacing="14">
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="Платформа результата" />
+                  <UniformGrid Columns="2">
+                    <Button Classes="platform" Classes.selected="{Binding IsMacTarget}" Command="{Binding TargetMacCommand}" Margin="0,0,6,0">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Path Classes="icon" Data="{StaticResource IconMac}" />
+                        <StackPanel><TextBlock FontWeight="SemiBold" Text="macOS" /><TextBlock Classes="dim" FontSize="12" Text="Mac · .app" /></StackPanel>
+                      </StackPanel>
+                    </Button>
+                    <Button Classes="platform" Classes.selected="{Binding IsTargetWindows}" Command="{Binding TargetWindowsCommand}" Margin="6,0,0,0">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Path Classes="icon" Data="{StaticResource IconWindows}" />
+                        <StackPanel><TextBlock FontWeight="SemiBold" Text="Windows" /><TextBlock Classes="dim" FontSize="12" Text="x64 · .exe" /></StackPanel>
+                      </StackPanel>
+                    </Button>
+                  </UniformGrid>
+                  <StackPanel Spacing="7" IsVisible="{Binding IsMacTarget}">
+                    <TextBlock Classes="dim" FontSize="12" Text="Процессор Mac, на котором будет запускаться игра" />
+                    <ComboBox ItemsSource="{Binding Architectures}" SelectedItem="{Binding SelectedArchitecture, Mode=TwoWay}" IsEnabled="{Binding CanChooseArchitecture}">
+                      <ComboBox.ItemTemplate><DataTemplate DataType="vm:ArchitectureChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Spacing="7">
+                    <TextBlock Classes="dim" FontSize="12" Text="Название игры в пакете" />
+                    <TextBox Text="{Binding GameName, Mode=TwoWay}" Watermark="Название для готового пакета" IsEnabled="{Binding NotBusy}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </Grid>
+
             <Border Classes="card">
-              <StackPanel Spacing="12">
-                <TextBlock FontWeight="SemiBold" Text="2 · Целевая система" />
-                <Grid ColumnDefinitions="*,16,*">
-                  <StackPanel Spacing="7"><TextBlock Classes="muted" FontSize="12" Text="Система" /><ComboBox ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget, Mode=TwoWay}" IsEnabled="{Binding NotBusy}"><ComboBox.ItemTemplate><DataTemplate DataType="vm:TargetChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate></ComboBox></StackPanel>
-                  <StackPanel Grid.Column="2" Spacing="7"><TextBlock Classes="muted" FontSize="12" Text="Процессор Mac" /><ComboBox ItemsSource="{Binding Architectures}" SelectedItem="{Binding SelectedArchitecture, Mode=TwoWay}" IsEnabled="{Binding CanChooseArchitecture}"><ComboBox.ItemTemplate><DataTemplate DataType="vm:ArchitectureChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate></ComboBox></StackPanel>
+              <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="Совместимость" />
+                  <Panel Grid.Column="1">
+                    <Border Classes="chip" Background="{StaticResource Accent}" BorderThickness="0" IsVisible="{Binding PlanReady}">
+                      <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentInk}" Text="{Binding PlanChip}" />
+                    </Border>
+                    <Border Classes="chip" BorderBrush="{StaticResource Danger}" IsVisible="{Binding PlanBlocked}">
+                      <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Danger}" Text="{Binding PlanChip}" />
+                    </Border>
+                    <Border Classes="chip" IsVisible="{Binding PlanPending}">
+                      <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding PlanChip}" />
+                    </Border>
+                  </Panel>
                 </Grid>
-                <TextBlock Classes="muted" FontSize="12" Text="Для Windows используется x64. Для Mac выбирайте процессор компьютера, на котором будет запускаться игра." TextWrapping="Wrap" />
-                <TextBlock Classes="muted" FontSize="12" Text="Название игры" />
-                <TextBox Text="{Binding GameName, Mode=TwoWay}" Watermark="Название для готового пакета" IsEnabled="{Binding NotBusy}" />
-              </StackPanel>
-            </Border>
-            <Border Classes="card">
-              <StackPanel Spacing="12">
-                <TextBlock Classes="eyebrow" Text="{Binding PlanFacts}" TextWrapping="Wrap" />
-                <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding PlanTitle}" TextWrapping="Wrap" />
-                <TextBlock Classes="muted" Text="{Binding PlanDetail}" TextWrapping="Wrap" />
-                <Expander Header="Проверки совместимости" IsVisible="{Binding HasWarnings}"><SelectableTextBlock Text="{Binding PlanWarnings}" TextWrapping="Wrap" Foreground="#B7C8DB" FontSize="12" /></Expander>
-                <Expander Header="Дополнительные параметры движка">
-                  <StackPanel Spacing="8" Margin="0,10,0,0">
-                    <TextBlock Classes="muted" FontSize="12" Text="Версия движка. Для Godot должна совпадать с исходной игрой." TextWrapping="Wrap" />
+                <TextBlock FontSize="19" FontWeight="SemiBold" Text="{Binding PlanTitle}" TextWrapping="Wrap" />
+                <TextBlock Classes="secondary" Text="{Binding PlanDetail}" TextWrapping="Wrap" />
+                <Expander Header="Проверки совместимости" IsVisible="{Binding HasWarnings}">
+                  <SelectableTextBlock Text="{Binding PlanWarnings}" TextWrapping="Wrap" />
+                </Expander>
+                <Expander Header="Параметры движка">
+                  <StackPanel Spacing="8" Margin="0,8,0,0">
+                    <TextBlock Classes="dim" FontSize="12" Text="Версия движка. Для Godot должна совпадать с исходной игрой." TextWrapping="Wrap" />
                     <TextBox Text="{Binding RuntimeVersion, Mode=TwoWay}" Watermark="Например: 4.7.1" IsEnabled="{Binding NotBusy}" />
-                    <TextBlock Classes="muted" FontSize="12" Text="Runtime вручную (необязательно). Пустое поле — официальный источник с проверкой контрольной суммы." TextWrapping="Wrap" />
+                    <TextBlock Classes="dim" FontSize="12" Text="Пакет движка вручную (необязательно). Пустое поле — официальный источник с проверкой контрольной суммы." TextWrapping="Wrap" />
                     <TextBox Text="{Binding RuntimePath, Mode=TwoWay}" Watermark="Путь к официальному пакету движка" IsEnabled="{Binding NotBusy}" />
-                    <Button Content="Выбрать runtime" Click="SelectRuntime_Click" IsEnabled="{Binding NotBusy}" HorizontalAlignment="Left" />
+                    <Button Classes="pill" Content="Выбрать пакет движка" Click="SelectRuntime_Click" IsEnabled="{Binding NotBusy}" HorizontalAlignment="Left" />
                   </StackPanel>
                 </Expander>
               </StackPanel>
             </Border>
-            <Border Classes="card" IsVisible="{Binding HasResult}">
-              <StackPanel Spacing="12"><TextBlock FontWeight="SemiBold" Text="Готовый пакет" /><SelectableTextBlock Text="{Binding ResultPath}" TextWrapping="Wrap" Foreground="#7FDBEF" /><Button Content="Показать в Finder" Command="{Binding RevealOutputCommand}" HorizontalAlignment="Left" /></StackPanel>
+
+            <Border Classes="card" IsVisible="{Binding HasResult}" BorderBrush="{StaticResource Success}">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="6">
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="Пакет готов" />
+                  <SelectableTextBlock Text="{Binding ResultPath}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="pill" Content="Показать в Finder" Command="{Binding RevealOutputCommand}" VerticalAlignment="Center" Margin="16,0,0,0" />
+              </Grid>
             </Border>
-            <Expander Header="Журнал переноса"><SelectableTextBlock Text="{Binding ProgressLog}" TextWrapping="Wrap" Foreground="#B7C8DB" FontSize="12" /></Expander>
+
+            <Expander Header="Журнал переноса">
+              <SelectableTextBlock Text="{Binding ProgressLog}" TextWrapping="Wrap" />
+            </Expander>
           </StackPanel>
         </ScrollViewer>
-        <Border Grid.Row="2" Background="#132134" BorderBrush="#2A4059" BorderThickness="1" CornerRadius="9" Padding="18,14">
-          <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-            <TextBlock Classes="eyebrow" Text="3 · НОВЫЙ ZIP, ИСХОДНАЯ ИГРА СОХРАНЯЕТСЯ" Margin="0,0,0,8" />
-            <Button Grid.Column="1" Grid.RowSpan="2" Classes="primary" Content="Создать пакет" Command="{Binding ConvertCommand}" Margin="18,0,0,0" MinHeight="48" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
-              <TextBox Text="{Binding OutputPath, Mode=TwoWay}" Watermark="Путь нового ZIP" IsEnabled="{Binding NotBusy}" />
-              <Button Grid.Column="1" Content="…" Click="SelectOutput_Click" IsEnabled="{Binding NotBusy}" Margin="8,0,0,0" Padding="12,8" ToolTip.Tip="Выбрать путь ZIP" />
-            </Grid>
+
+        <!-- Action bar -->
+        <Border Grid.Row="1" Background="{StaticResource BackgroundSoft}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,1,0,0" Padding="36,14,32,16">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
+            <TextBlock Classes="eyebrow" Text="ZIP-ПАКЕТ" VerticalAlignment="Center" Margin="0,0,14,0" />
+            <TextBox Grid.Column="1" Text="{Binding OutputPath, Mode=TwoWay}" Watermark="Путь нового ZIP" IsEnabled="{Binding NotBusy}" />
+            <Button Grid.Column="2" Classes="pill" Content="Сохранить в…" Click="SelectOutput_Click" IsEnabled="{Binding NotBusy}" Margin="10,0,0,0" />
+            <Button Grid.Column="3" Classes="primary pill" Command="{Binding ConvertCommand}" Margin="10,0,0,0" MinWidth="200" Height="44">
+              <TextBlock Text="{Binding ConvertLabel}" FontWeight="Bold" />
+            </Button>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="4" Classes="dim" FontSize="12" Text="{Binding Status}" Margin="0,10,0,0" TextTrimming="CharacterEllipsis" />
           </Grid>
         </Border>
       </Grid>
 
-      <ScrollViewer Grid.Column="1" IsVisible="{Binding IsSettings}" Margin="24" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="18" MaxWidth="780" HorizontalAlignment="Left">
-          <TextBlock Classes="title" Text="Настройки" />
-          <Border Classes="card"><StackPanel Spacing="12"><TextBlock FontWeight="SemiBold" Text="Библиотека Mac" /><TextBlock Classes="muted" Text="Записи, подготовленные приложения и результаты находятся в отдельном профиле Mac." TextWrapping="Wrap" /><SelectableTextBlock Text="{Binding DataDirectory}" TextWrapping="Wrap" Foreground="#BBCBDE" FontSize="12" /><Button Content="Открыть папку библиотеки" Command="{Binding RevealDataCommand}" HorizontalAlignment="Left" /></StackPanel></Border>
-          <Border Classes="card"><StackPanel Spacing="12"><TextBlock FontWeight="SemiBold" Text="Движки eX" /><TextBlock Classes="muted" Text="Официальные движки загружаются по мере необходимости и используются повторно после проверки контрольной суммы." TextWrapping="Wrap" /><SelectableTextBlock Text="{Binding CacheDirectory}" TextWrapping="Wrap" Foreground="#BBCBDE" FontSize="12" /><Button Content="Открыть кэш движков" Command="{Binding RevealCacheCommand}" HorizontalAlignment="Left" /></StackPanel></Border>
-          <Border Classes="card"><StackPanel Spacing="12"><TextBlock FontWeight="SemiBold" Text="DUSTORE LAUNCHER V · macOS" /><TextBlock Classes="muted" Text="Нативная библиотека Mac и перенос Windows ↔ macOS через eX. Магазин открывается в системном браузере. Поддержка переноса зависит от движка и платформенных зависимостей конкретной игры." TextWrapping="Wrap" /><TextBlock Classes="muted" Text="APK-конвертация, облачный аккаунт и функции Windows-устройств в эту версию Mac не включены." TextWrapping="Wrap" FontSize="12" /></StackPanel></Border>
+      <!-- ===== Settings ===== -->
+      <ScrollViewer Grid.Row="1" IsVisible="{Binding IsSettings}" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="36,6,32,32" MaxWidth="820" HorizontalAlignment="Left">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Библиотека Mac" />
+              <TextBlock Classes="secondary" Text="Записи, подготовленные приложения и обложки хранятся в отдельном профиле Mac." TextWrapping="Wrap" />
+              <SelectableTextBlock Text="{Binding DataDirectory}" TextWrapping="Wrap" />
+              <Button Classes="pill" Content="Открыть папку библиотеки" Command="{Binding RevealDataCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Движки eX" />
+              <TextBlock Classes="secondary" Text="Официальные движки загружаются по мере необходимости и используются повторно после проверки контрольной суммы." TextWrapping="Wrap" />
+              <SelectableTextBlock Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
+              <Button Classes="pill" Content="Открыть кэш движков" Command="{Binding RevealCacheCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Магазин Dustore" />
+              <TextBlock Classes="secondary" Text="Магазин, главная страница, спринты и ассеты открываются прямо в лаунчере через WebKit — тот же движок, что у Safari. Вход и история сохраняются между запусками." TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding RailVersion}" />
+              <TextBlock Classes="secondary" Text="Нативная библиотека Mac и перенос Windows ↔ macOS через eX. Поддержка переноса зависит от движка и платформенных зависимостей конкретной игры." TextWrapping="Wrap" />
+              <TextBlock Classes="dim" FontSize="12" Text="APK-конвертация и функции Windows-устройств в эту версию Mac не включены." TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
-    </Grid>
 
-    <Border Grid.Row="2" Background="#101B2A" BorderBrush="#24354B" BorderThickness="0,1,0,0" Padding="20,11">
-      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-        <StackPanel Spacing="7">
-          <ProgressBar IsVisible="{Binding IsBusy}" IsIndeterminate="True" Height="3" />
-          <TextBlock Classes="muted" Text="{Binding Status}" TextWrapping="Wrap" FontSize="12" />
-        </StackPanel>
-        <Button Grid.Column="1" Content="Отменить" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" Margin="16,0,0,0" VerticalAlignment="Center" />
-        <SelectableTextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="#FF9DAD" TextWrapping="Wrap" FontSize="12" Margin="0,6,0,0" />
+      <!-- ===== Dustore website inside the launcher ===== -->
+      <Grid Grid.Row="1" IsVisible="{Binding IsWeb}" RowDefinitions="Auto,Auto,*" Margin="36,0,32,24">
+        <Border Background="{StaticResource BackgroundSoft}" CornerRadius="14,14,0,0" Padding="10,8" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1,1,1,0">
+          <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+            <Button Classes="round small" Click="WebBack_Click" IsEnabled="{Binding WebCanGoBack}" ToolTip.Tip="Назад">
+              <Path Classes="icon" Data="{StaticResource IconBack}" />
+            </Button>
+            <Button Grid.Column="1" Classes="round small" Click="WebForward_Click" IsEnabled="{Binding WebCanGoForward}" Margin="4,0,0,0" ToolTip.Tip="Вперёд">
+              <Path Classes="icon" Data="{StaticResource IconForward}" />
+            </Button>
+            <Button Grid.Column="2" Classes="round small" Click="WebReload_Click" Margin="4,0,10,0" ToolTip.Tip="Обновить">
+              <Path Classes="icon" Data="{StaticResource IconReload}" />
+            </Button>
+            <Border Grid.Column="3" Background="{StaticResource Background}" CornerRadius="19" Padding="14,0" Height="38">
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Path Classes="icon" Data="{StaticResource IconLock}" Stroke="{StaticResource TextDim}" StrokeThickness="1.6" />
+                <TextBlock Classes="secondary" FontSize="13" Text="{Binding WebAddress}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <Button Grid.Column="4" Classes="ghost pill" Command="{Binding OpenInBrowserCommand}" Margin="10,0,0,0" ToolTip.Tip="Открыть эту страницу в системном браузере">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Path Classes="icon" Data="{StaticResource IconExternal}" />
+                <TextBlock Text="В браузере" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+        <Panel Grid.Row="1" Height="2" Background="{StaticResource BorderSoft}">
+          <ProgressBar Value="{Binding WebProgress}" Maximum="100" Height="2" MinHeight="2" IsVisible="{Binding WebLoading}" />
+        </Panel>
+        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1,0,1,1">
+          <Grid>
+            <Panel Name="SiteHost" IsVisible="{Binding IsWebSupported}" />
+            <StackPanel IsVisible="{Binding IsWebUnsupported}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+              <TextBlock Text="Встроенный сайт работает в macOS-версии." Foreground="{StaticResource AccentInk}" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding WebStartUrl}" Foreground="{StaticResource AccentInk}" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+        </Border>
       </Grid>
-    </Border>
+
+      <!-- ===== Activity and error notices ===== -->
+      <StackPanel Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,32,92" Spacing="10" MaxWidth="520">
+        <Border IsVisible="{Binding IsBusy}" Background="{StaticResource Surface}" BorderBrush="{StaticResource BorderMid}" BorderThickness="1" CornerRadius="14" Padding="16,12">
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="ghost pill" Content="Отменить" Command="{Binding CancelCommand}" Margin="12,0,0,0" MinHeight="32" Padding="12,4" />
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" IsIndeterminate="True" Height="3" Margin="0,10,0,0" />
+          </Grid>
+        </Border>
+        <Border IsVisible="{Binding HasError}" Background="{StaticResource Surface}" BorderBrush="{StaticResource Danger}" BorderThickness="1" CornerRadius="14" Padding="16,12">
+          <Grid ColumnDefinitions="*,Auto">
+            <SelectableTextBlock Text="{Binding Error}" Foreground="{StaticResource Danger}" TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="round small" Click="DismissError_Click" Margin="12,0,0,0" ToolTip.Tip="Скрыть">
+              <Path Classes="icon" Data="{StaticResource IconClose}" />
+            </Button>
+          </Grid>
+        </Border>
+      </StackPanel>
+    </Grid>
   </Grid>
 </Window>

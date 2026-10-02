@@ -2,7 +2,357 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="DustoreLauncherV.Mac.App"
              RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <!-- Palette shared with DUSTORE LAUNCHER V for Windows: flat colours from the logo, no gradients or glows. -->
+    <SolidColorBrush x:Key="Background" Color="#120811" />
+    <SolidColorBrush x:Key="BackgroundSoft" Color="#1B0C1A" />
+    <SolidColorBrush x:Key="NavBackground" Color="#0D050D" />
+    <SolidColorBrush x:Key="Surface" Color="#261122" />
+    <SolidColorBrush x:Key="SurfaceHover" Color="#371A2E" />
+    <SolidColorBrush x:Key="SurfacePressed" Color="#1A0B17" />
+    <SolidColorBrush x:Key="BorderSoft" Color="#351B30" />
+    <SolidColorBrush x:Key="BorderMid" Color="#522846" />
+    <SolidColorBrush x:Key="BorderStrong" Color="#8E4F7C" />
+    <SolidColorBrush x:Key="TextPrimary" Color="#FFF4F1" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#E6C6D9" />
+    <SolidColorBrush x:Key="TextDim" Color="#A7849B" />
+    <SolidColorBrush x:Key="Accent" Color="#FFD73D" />
+    <SolidColorBrush x:Key="AccentHover" Color="#FFE57D" />
+    <SolidColorBrush x:Key="AccentPressed" Color="#EEB910" />
+    <SolidColorBrush x:Key="AccentInk" Color="#2B1020" />
+    <SolidColorBrush x:Key="AccentSubtle" Color="#441B38" />
+    <SolidColorBrush x:Key="Orchid" Color="#FF62AB" />
+    <SolidColorBrush x:Key="Success" Color="#86E6A8" />
+    <SolidColorBrush x:Key="Warning" Color="#FFA95E" />
+    <SolidColorBrush x:Key="Danger" Color="#FF6B7E" />
+
+    <FontFamily x:Key="DisplayFont">DIN Condensed, Bahnschrift, Arial Narrow, Inter</FontFamily>
+
+    <!-- Icons: one 24×24 grid, one stroke weight. -->
+    <StreamGeometry x:Key="IconLibrary">M3 20.5h18 M5 20.5V8.5h4v12 M10.5 20.5V5h4v15.5 M16 20.5l1.6-11.6 3.9.55-1.6 11.05</StreamGeometry>
+    <StreamGeometry x:Key="IconEx">M4 8h14 M14.5 4.5L18 8l-3.5 3.5 M20 16H6 M9.5 12.5L6 16l3.5 3.5</StreamGeometry>
+    <StreamGeometry x:Key="IconStore">M5 8.5h14l-1.2 12H6.2z M8.8 8.5V7a3.2 3.2 0 0 1 6.4 0v1.5</StreamGeometry>
+    <StreamGeometry x:Key="IconHome">M3.5 11L12 4l8.5 7 M6 9.3v11.2h12V9.3 M10 20.5v-5.5h4v5.5</StreamGeometry>
+    <StreamGeometry x:Key="IconSprint">M12 21a7.6 7.6 0 1 0 0-15.2 7.6 7.6 0 0 0 0 15.2z M12 9.5v4l2.6 1.8 M9.5 2.5h5 M12 2.5v3.3 M18.4 6.4l1.4-1.4</StreamGeometry>
+    <StreamGeometry x:Key="IconAssets">M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9</StreamGeometry>
+    <StreamGeometry x:Key="IconSettings">M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z M10.3 3h3.4l.5 2.4 1.7 1 2.3-.8 1.7 2.9-1.8 1.6v2l1.8 1.6-1.7 2.9-2.3-.8-1.7 1-.5 2.4h-3.4l-.5-2.4-1.7-1-2.3.8-1.7-2.9 1.8-1.6v-2L4.1 8.5l1.7-2.9 2.3.8 1.7-1z</StreamGeometry>
+    <StreamGeometry x:Key="IconPlay">M8 5.2v13.6L19 12z</StreamGeometry>
+    <StreamGeometry x:Key="IconFolder">M3 7a2 2 0 0 1 2-2h4.2l2 2.2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z</StreamGeometry>
+    <StreamGeometry x:Key="IconTrash">M4 7h16 M9.5 7V4.5h5V7 M6.2 7l1 13h9.6l1-13 M10.2 11v5.5 M13.8 11v5.5</StreamGeometry>
+    <StreamGeometry x:Key="IconPlus">M12 5v14 M5 12h14</StreamGeometry>
+    <StreamGeometry x:Key="IconSearch">M10.8 17.6a6.8 6.8 0 1 0 0-13.6 6.8 6.8 0 0 0 0 13.6z M20 20l-4.4-4.4</StreamGeometry>
+    <StreamGeometry x:Key="IconBack">M14.5 5.5L8 12l6.5 6.5</StreamGeometry>
+    <StreamGeometry x:Key="IconForward">M9.5 5.5L16 12l-6.5 6.5</StreamGeometry>
+    <StreamGeometry x:Key="IconReload">M19.5 12a7.5 7.5 0 1 1-2.2-5.3 M19.5 4.5v4.6h-4.6</StreamGeometry>
+    <StreamGeometry x:Key="IconExternal">M13.5 4.5h6v6 M19.5 4.5l-8.5 8.5 M17.5 13.5v5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1h5</StreamGeometry>
+    <StreamGeometry x:Key="IconWindows">M4 6l7-1v6.5H4z M13 4.7l7-1.2v8H13z M4 12.5h7V19l-7-1z M13 12.5h7v8l-7-1.2z</StreamGeometry>
+    <StreamGeometry x:Key="IconMac">M4.5 5.5h15v10h-15z M2.5 18.5h19 M10 15.5l-.5 3 M14 15.5l.5 3</StreamGeometry>
+    <StreamGeometry x:Key="IconFile">M6.5 3h7.5l4 4v14h-11.5z M14 3v4h4</StreamGeometry>
+    <StreamGeometry x:Key="IconLock">M7 11h10v9H7z M9 11V8.5a3 3 0 0 1 6 0V11</StreamGeometry>
+    <StreamGeometry x:Key="IconClose">M6.5 6.5l11 11 M17.5 6.5l-11 11</StreamGeometry>
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
+
+    <Style Selector="TextBlock">
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="SelectableTextBlock">
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBlock.secondary"><Setter Property="Foreground" Value="{StaticResource TextSecondary}" /></Style>
+    <Style Selector="TextBlock.dim"><Setter Property="Foreground" Value="{StaticResource TextDim}" /></Style>
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="LetterSpacing" Value="1.6" />
+    </Style>
+    <Style Selector="TextBlock.display">
+      <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="LetterSpacing" Value="0.6" />
+    </Style>
+
+    <!-- Icons are strokes on a fixed 24 grid; colour follows the owning control's state. -->
+    <Style Selector="Path.icon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="StrokeThickness" Value="1.8" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Stroke" Value="{StaticResource TextSecondary}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Path.fill">
+      <Setter Property="Fill" Value="{Binding $self.Stroke}" />
+    </Style>
+
+    <!-- Buttons. Only hover/press feedback is animated. -->
+    <Style Selector="Button">
+      <Setter Property="Background" Value="{StaticResource Surface}" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="16,10" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.97)" /></Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfacePressed}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+    </Style>
+    <Style Selector="Button:disabled Path.icon"><Setter Property="Stroke" Value="{StaticResource BorderStrong}" /></Style>
+
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentInk}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="Button.primary Path.icon"><Setter Property="Stroke" Value="{StaticResource AccentInk}" /></Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentHover}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentInk}" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentPressed}" />
+    </Style>
+    <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentSubtle}" />
+      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+    </Style>
+
+    <Style Selector="Button.outline">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+      <Setter Property="Foreground" Value="{StaticResource Accent}" />
+      <Setter Property="CornerRadius" Value="21" />
+    </Style>
+    <Style Selector="Button.outline Path.icon"><Setter Property="Stroke" Value="{StaticResource Accent}" /></Style>
+    <Style Selector="Button.outline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentSubtle}" />
+      <Setter Property="BorderBrush" Value="{StaticResource AccentHover}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentHover}" />
+    </Style>
+
+    <Style Selector="Button.pill"><Setter Property="CornerRadius" Value="21" /></Style>
+
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <Style Selector="Button.round">
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="52" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="26" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderMid}" />
+    </Style>
+    <Style Selector="Button.round:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}" />
+    </Style>
+    <Style Selector="Button.round:pointerover Path.icon"><Setter Property="Stroke" Value="{StaticResource TextPrimary}" /></Style>
+    <Style Selector="Button.small">
+      <Setter Property="Width" Value="38" />
+      <Setter Property="Height" Value="38" />
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="CornerRadius" Value="19" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- Left rail. -->
+    <Style Selector="Button.nav">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    </Style>
+    <Style Selector="Button.nav Border.navbar"><Setter Property="Opacity" Value="0" /></Style>
+    <Style Selector="Button.nav.selected Border.navbar"><Setter Property="Opacity" Value="1" /></Style>
+    <Style Selector="Button.nav.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource Surface}" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="Button.nav.selected"><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="Button.nav.selected Path.icon"><Setter Property="Stroke" Value="{StaticResource Accent}" /></Style>
+    <Style Selector="Button.nav:pointerover Path.icon"><Setter Property="Stroke" Value="{StaticResource TextPrimary}" /></Style>
+    <Style Selector="Button.nav.selected:pointerover Path.icon"><Setter Property="Stroke" Value="{StaticResource AccentHover}" /></Style>
+
+    <!-- Shelf tabs: text plus count, a pink underline marks the open tab. -->
+    <Style Selector="Button.tab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="2,6" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+    </Style>
+    <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="Button.tab Border.underline"><Setter Property="Opacity" Value="0" /></Style>
+    <Style Selector="Button.tab.selected Border.underline"><Setter Property="Opacity" Value="1" /></Style>
+    <Style Selector="Button.tab.selected"><Setter Property="Foreground" Value="{StaticResource TextPrimary}" /></Style>
+
+    <!-- Game tiles lift on hover; the open game gets the pink edge. -->
+    <Style Selector="Button.tile">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Background" Value="{StaticResource Surface}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.tile:pointerover"><Setter Property="RenderTransform" Value="translateY(-3px)" /></Style>
+    <Style Selector="Button.tile:pressed"><Setter Property="RenderTransform" Value="translateY(-1px) scale(0.985)" /></Style>
+    <Style Selector="Button.tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderMid}" />
+    </Style>
+    <Style Selector="Button.tile.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{StaticResource Orchid}" />
+    </Style>
+    <Style Selector="Button.addtile">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.addtile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+    </Style>
+    <Style Selector="Button.addtile:pointerover Rectangle"><Setter Property="Stroke" Value="{StaticResource Orchid}" /></Style>
+
+    <!-- eX platform cards. -->
+    <Style Selector="Button.platform">
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+    <Style Selector="Button.platform.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource AccentSubtle}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Orchid}" />
+    </Style>
+    <Style Selector="Button.platform.selected Path.icon"><Setter Property="Stroke" Value="{StaticResource Accent}" /></Style>
+
+    <!-- Surfaces and inputs. -->
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="22" />
+    </Style>
+    <Style Selector="Border.chip">
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderMid}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="{StaticResource Background}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="12,9" />
+      <Setter Property="SelectionBrush" Value="{StaticResource BorderStrong}" />
+      <Setter Property="CaretBrush" Value="{StaticResource Accent}" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{StaticResource Background}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderMid}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{StaticResource Background}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Orchid}" />
+      <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+    <Style Selector="TextBox /template/ TextBlock#PART_Watermark, TextBox /template/ TextBlock#PART_FloatingWatermark">
+      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+    </Style>
+    <Style Selector="TextBox.search">
+      <Setter Property="CornerRadius" Value="21" />
+      <Setter Property="Padding" Value="40,10,14,10" />
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+    </Style>
+    <Style Selector="TextBox.search:pointerover /template/ Border#PART_BorderElement, TextBox.search:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="{StaticResource Background}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ComboBox:pointerover /template/ Border#Background">
+      <Setter Property="Background" Value="{StaticResource BackgroundSoft}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderMid}" />
+    </Style>
+    <Style Selector="Expander">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    </Style>
+    <Style Selector="ProgressBar">
+      <Setter Property="Foreground" Value="{StaticResource Accent}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="MinHeight" Value="3" />
+    </Style>
+    <Style Selector="ScrollViewer"><Setter Property="AllowAutoHide" Value="True" /></Style>
   </Application.Styles>
 </Application>

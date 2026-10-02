@@ -8,6 +8,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
+using DustoreLauncherV.Mac.Controls;
 using DustoreLauncherV.Mac.ViewModels;
 
 namespace DustoreLauncherV.Mac;
@@ -17,17 +19,79 @@ public partial class MainWindow : Window
     private Task? _initializeTask;
     private bool _closingPrompt;
 
+    private readonly NativeWebView? _web;
+    private string? _webSectionShown;
+
     public MainWindow()
     {
         AvaloniaXamlLoader.Load(this);
         ViewModel = new MainViewModel();
         DataContext = ViewModel;
+        if (OperatingSystem.IsMacOS())
+        {
+            // Content runs under the title bar; the rail leaves room for the window buttons.
+            ExtendClientAreaToDecorationsHint = true;
+            ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.PreferSystemChrome;
+            ExtendClientAreaTitleBarHeightHint = 34;
+        }
+        if (NativeWebView.IsSupported && this.FindControl<Panel>("SiteHost") is { } siteHost)
+        {
+            // WKWebView exists only on macOS; other systems never create a native host.
+            _web = new NativeWebView();
+            _web.StateChanged += (_, _) => PushWebState();
+            siteHost.Children.Add(_web);
+        }
+        ViewModel.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Section)) ShowWebSection(); };
+        if (Program.StartSection is "ex" or "settings" || MainViewModel.WebStartUrlFor(Program.StartSection ?? "") is not null)
+        {
+            ViewModel.Section = Program.StartSection!;
+            ShowWebSection();
+        }
         Opened += OnOpened;
         Closing += OnClosing;
         KeyDown += OnKeyDown;
     }
 
     public MainViewModel ViewModel { get; }
+    public NativeWebView? WebView => _web;
+
+    private void ShowWebSection()
+    {
+        if (_web is null || !ViewModel.IsWeb) return;
+        // Each site section opens its start page once; returning keeps the page the user left.
+        if (_webSectionShown == ViewModel.Section) return;
+        _webSectionShown = ViewModel.Section;
+        _web.Navigate(ViewModel.WebStartUrl);
+    }
+
+    private void PushWebState()
+    {
+        if (_web is null) return;
+        var state = _web.State;
+        ViewModel.UpdateWebState(state.Url, state.Title, state.IsLoading, state.Progress, state.CanGoBack, state.CanGoForward);
+    }
+
+    private void WebBack_Click(object? sender, RoutedEventArgs e) => _web?.GoBack();
+    private void WebForward_Click(object? sender, RoutedEventArgs e) => _web?.GoForward();
+    private void WebReload_Click(object? sender, RoutedEventArgs e) => _web?.Reload();
+    private void DismissError_Click(object? sender, RoutedEventArgs e) => ViewModel.DismissError();
+
+    private void DragArea_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is Control source && source.FindAncestorOfType<Button>(includeSelf: true) is null
+            && source.FindAncestorOfType<TextBox>(includeSelf: true) is null
+            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            BeginMoveDrag(e);
+    }
+
+    private void Tile_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Control { DataContext: GameItemViewModel game })
+        {
+            ViewModel.SelectedGame = game;
+            if (ViewModel.LaunchCommand.CanExecute(null)) ViewModel.LaunchCommand.Execute(null);
+        }
+    }
 
     public Task InitializeAsync() => _initializeTask ??= ViewModel.InitializeAsync();
 
@@ -118,14 +182,14 @@ public partial class MainWindow : Window
         catch (Exception error) { ViewModel.ReportError(error); }
     }
 
-    private void GamesList_DoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (ViewModel.LaunchCommand.CanExecute(null)) ViewModel.LaunchCommand.Execute(null);
-    }
-
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && this.FindControl<ListBox>("GamesList")?.IsKeyboardFocusWithin == true && ViewModel.LaunchCommand.CanExecute(null))
+        bool command = e.KeyModifiers.HasFlag(KeyModifiers.Meta) || e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        if (command && e.Key == Key.F && ViewModel.IsLibrary && ViewModel.HasGames)
+        {
+            this.FindControl<TextBox>("SearchBox")?.Focus(); e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && this.FindControl<ItemsControl>("Shelf")?.IsKeyboardFocusWithin == true && ViewModel.LaunchCommand.CanExecute(null))
         {
             ViewModel.LaunchCommand.Execute(null); e.Handled = true;
         }
@@ -144,13 +208,13 @@ public partial class MainWindow : Window
             {
                 Title = "Операция выполняется", Width = 460, Height = 210, CanResize = false,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = Avalonia.Media.Brush.Parse("#111D2E")
+                Background = Avalonia.Media.Brush.Parse("#1B0C1A")
             };
             var content = new StackPanel { Margin = new Thickness(24), Spacing = 18 };
             content.Children.Add(new TextBlock
             {
                 Text = "eX ещё работает. Можно запросить отмену и дождаться завершения текущего шага. Исходные файлы сохраняются.",
-                Foreground = Avalonia.Media.Brush.Parse("#E7EFF9"), TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                Foreground = Avalonia.Media.Brush.Parse("#FFF4F1"), TextWrapping = Avalonia.Media.TextWrapping.Wrap
             });
             var actions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 10 };
             var stay = new Button { Content = "Продолжить", Padding = new Thickness(15, 9) };

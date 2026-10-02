@@ -10,6 +10,8 @@ internal static class Program
 {
     internal static bool UiSmoke { get; private set; }
     internal static string? SmokeInputPath { get; private set; }
+    /// <summary>--screen=ex|settings|store|home|jams|assets opens a section directly (for checks).</summary>
+    internal static string? StartSection { get; private set; }
     internal static string SmokeReportPath { get; private set; } = "";
     internal static string SmokeScreenshotPath { get; private set; } = "";
 
@@ -20,6 +22,7 @@ internal static class Program
         UiSmoke = args.Contains("--ui-smoke");
         StartupDiagnostics.Begin(serviceSmoke ? "services-smoke" : UiSmoke ? "ui-smoke" : "normal");
         SmokeInputPath = Argument(args, "--smoke-input");
+        StartSection = args.FirstOrDefault(a => a.StartsWith("--screen=", StringComparison.Ordinal))?["--screen=".Length..];
         if (serviceSmoke || UiSmoke)
         {
             SmokeReportPath = Path.GetFullPath(Argument(args, "--smoke-report")
@@ -62,8 +65,28 @@ internal static class Program
             StartupDiagnostics.RecordFailure(error);
             if (UiSmoke)
                 WriteReport(new { status = "Fail", mode = "native-desktop-ui-startup", error = error.ToString() });
+            else
+                ShowNativeFailureAlert(error);
             return 1;
         }
+    }
+
+    // When the interface itself cannot start there is no window to report into;
+    // a system alert keeps the failure from looking like a silent instant close.
+    private static void ShowNativeFailureAlert(Exception error)
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+        try
+        {
+            string message = ("DUSTORE LAUNCHER V не смог открыть окно.\n\n" + error.Message + "\n\nЖурнал: " + StartupDiagnostics.LogPath)
+                .Replace("\\", "\\\\").Replace("\"", "\\\"");
+            var start = new System.Diagnostics.ProcessStartInfo("/usr/bin/osascript") { UseShellExecute = false };
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("display alert \"Ошибка запуска\" message \"" + message + "\" as critical");
+            using var alert = System.Diagnostics.Process.Start(start);
+            alert?.WaitForExit(120_000);
+        }
+        catch (Exception) { /* The log already holds the failure. */ }
     }
 
     public static AppBuilder BuildAvaloniaApp()

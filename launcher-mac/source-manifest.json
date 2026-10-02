@@ -1,115 +1,131 @@
-{
-  "product": "DUSTORE LAUNCHER V macOS",
-  "version": "5.2.1",
-  "files": [
-    {
-      "path": "App.axaml",
-      "sha256": "d7b2397acf25c6d95b8802c799333982dcd810e9a7e9a9cb805e8b53f23e1f77"
-    },
-    {
-      "path": "App.axaml.cs",
-      "sha256": "3ae590b328f17b9091034cad7729b849192fa165753b3e6434d8aecc3f51fc04"
-    },
-    {
-      "path": "DustoreLauncherV.Mac.csproj",
-      "sha256": "83ae3875aaee3301335c1d39e2c33a08602be20b3f9d515076205fb38f1ea096"
-    },
-    {
-      "path": "MainWindow.axaml",
-      "sha256": "9b2101b89ac4dadd124adf8fba943e5d104057ce4014e161b8373b9077365039"
-    },
-    {
-      "path": "MainWindow.axaml.cs",
-      "sha256": "7ada45f008a7e9ecc925e8e4ab03dc0b7be767eb70ab668f8e6487487057fd42"
-    },
-    {
-      "path": "prepare-ci.ps1",
-      "sha256": "bc56a1e29fb78736f98434fb59f9824e97244f008b1f372f3b05e631e1c9752b"
-    },
-    {
-      "path": "Program.cs",
-      "sha256": "3d2faba63f101b82da4a4410b6e3c67e932497419997b5fddd644995e5d8ce43"
-    },
-    {
-      "path": "README.md",
-      "sha256": "b1ba60baa10625f534730153345ac0f927ee35edd17f49933640efc877f83cac"
-    },
-    {
-      "path": "StartupDiagnostics.cs",
-      "sha256": "b2eccadfdded4fa603e1aac49cc835853fd3655877ccc6b0afefb337704b646a"
-    },
-    {
-      "path": "Assets/dustore-logo-original.png",
-      "sha256": "69cdb26a75f82302b8f476788a705bbdd6c1ed8d74934e3f05cb4df6a41468d4"
-    },
-    {
-      "path": "packaging/build_macos.py",
-      "sha256": "ee73d8133fb14258e9d5a81cd11983d37d8ccd73260ee5dd238e53f3f98800a5"
-    },
-    {
-      "path": "packaging/create_macos_dmg.py",
-      "sha256": "580a81279d439083e2df12492a4f302d778bc4af346519ef5a3ed49f43f7b631"
-    },
-    {
-      "path": "packaging/DustoreLauncherV.icns",
-      "sha256": "1d2aa375beeaa992c4d57eda6fd21b628033a5a136b8c09eb7fe09515c36c0f2"
-    },
-    {
-      "path": "packaging/launcher.entitlements",
-      "sha256": "b43515a84c79bc0b584d0553809d6bd140304261953610711a59c86b57f9e9a6"
-    },
-    {
-      "path": "packaging/macho_minimums.py",
-      "sha256": "a7a63aadd93362d6aadbea00d10b6854c8ae1a6284ed22b1b0b4ac15d12f409a"
-    },
-    {
-      "path": "packaging/make_icon.py",
-      "sha256": "a1ae2c45e61cf3ef6811b3896fb76cc36c35f21d414650f1a16b5bf1bbfbb57a"
-    },
-    {
-      "path": "packaging/observe_launchservices.swift",
-      "sha256": "563d92c5c7fa081f27d329f1ff6c6edb544595722e5e95cd138863ddd3d5891c"
-    },
-    {
-      "path": "packaging/verify_macos.py",
-      "sha256": "332e8155f0ba4dd79a6431b8b51ba9372b9647c50b62ebc5146fb44156740153"
-    },
-    {
-      "path": "packaging/tests/test_packaging.py",
-      "sha256": "e1b560a6db5878158e8bc362def291c7f3aeda032856ea48d6772feebe3e529f"
-    },
-    {
-      "path": "Services/GameEntry.cs",
-      "sha256": "af9b9b1ec95f2391011cfd364f78d62d295ed58f2d26819084d69ab4ffb96dfe"
-    },
-    {
-      "path": "Services/LauncherServices.cs",
-      "sha256": "f1986f4b3b61fa1212186686738cc852208e9313d328fa0f291178c4e7be75e2"
-    },
-    {
-      "path": "Services/LauncherSmokeChecks.cs",
-      "sha256": "9261e99437e46c93393dc4027226e14b4148d989b38d5c4743db8886c6d14c82"
-    },
-    {
-      "path": "Services/MacLocalSigner.cs",
-      "sha256": "88e0561c0769d0459d3f3e93c435681ff8c0499255397b5070b7a91b38cb7bd4"
-    },
-    {
-      "path": "Services/MacPackageImporter.cs",
-      "sha256": "1cc083e605a739b7794711f5d91841aa12b886f911782c8da59a2ea4f946965c"
-    },
-    {
-      "path": "Services/MacQuarantine.cs",
-      "sha256": "5a5925fe5e3344f3164cef40c975c132f62bbf9cc172ff1e6916197a0c21b299"
-    },
-    {
-      "path": "Services/PlatformLauncher.cs",
-      "sha256": "47eec4646c0e0353b3e3c0813c0a4e934e25a16f8265f03342061ef94bb66a18"
-    },
-    {
-      "path": "ViewModels/MainViewModel.cs",
-      "sha256": "1b77e1d96315b4a39602d24c0df2b32ed48255c3fd02009e9c323a629e00909b"
-    }
-  ],
-  "workflowSha256": "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"
+﻿{
+    "product":  "DUSTORE LAUNCHER V macOS",
+    "version":  "5.2.2",
+    "files":  [
+                  {
+                      "path":  "App.axaml",
+                      "sha256":  "91e903ed3231d025fe4900e0d8169cde015d36b89903fcb3647454bafa74955b"
+                  },
+                  {
+                      "path":  "App.axaml.cs",
+                      "sha256":  "f7180b8136c80d4538d0060879fa77d9a5545357547bbb84b82e5dab3cc3cd2d"
+                  },
+                  {
+                      "path":  "DustoreLauncherV.Mac.csproj",
+                      "sha256":  "e18b2b174793b372b7fcbc9bee78e3f1f61b00b0c3765afe353fe831b0ce053e"
+                  },
+                  {
+                      "path":  "MainWindow.axaml",
+                      "sha256":  "3fb158d5a02ab09aa22b8b33ac4f0b859a8ef8bd4b60374ef4d9a41d40aacb7b"
+                  },
+                  {
+                      "path":  "MainWindow.axaml.cs",
+                      "sha256":  "41cd51d36f521dc0e1db4ec9555c1d2f5441ed59c1dc20051f8f8ae4a1c4b372"
+                  },
+                  {
+                      "path":  "prepare-ci.ps1",
+                      "sha256":  "733e71e89e4786f4f9fcbb819f3a4994128af2fbe3249110a098e2b65342f39c"
+                  },
+                  {
+                      "path":  "Program.cs",
+                      "sha256":  "9918c2f0c83bdcbe12b472aa93f2cdcaf7b5833509152fbd2e2183efaedc729f"
+                  },
+                  {
+                      "path":  "README.md",
+                      "sha256":  "73a7971b39ca43d3c88b6c79be6f7eeb08d556c60157ab1ad19391e210d57ec4"
+                  },
+                  {
+                      "path":  "StartupDiagnostics.cs",
+                      "sha256":  "b2eccadfdded4fa603e1aac49cc835853fd3655877ccc6b0afefb337704b646a"
+                  },
+                  {
+                      "path":  "Assets/dustore-logo-original.png",
+                      "sha256":  "69cdb26a75f82302b8f476788a705bbdd6c1ed8d74934e3f05cb4df6a41468d4"
+                  },
+                  {
+                      "path":  "Controls/Converters.cs",
+                      "sha256":  "eefdf4795329eb8a178e0f1478f270a9b99fd8ccacebb48aa2d1550a190026e8"
+                  },
+                  {
+                      "path":  "Controls/NativeWebView.cs",
+                      "sha256":  "974b11abb1ac80e0cfb707d4f28f5dce0a7d443f665b31c6718ebfe5698d5d0f"
+                  },
+                  {
+                      "path":  "packaging/build_macos.py",
+                      "sha256":  "ee73d8133fb14258e9d5a81cd11983d37d8ccd73260ee5dd238e53f3f98800a5"
+                  },
+                  {
+                      "path":  "packaging/create_macos_dmg.py",
+                      "sha256":  "580a81279d439083e2df12492a4f302d778bc4af346519ef5a3ed49f43f7b631"
+                  },
+                  {
+                      "path":  "packaging/DustoreLauncherV.icns",
+                      "sha256":  "1d2aa375beeaa992c4d57eda6fd21b628033a5a136b8c09eb7fe09515c36c0f2"
+                  },
+                  {
+                      "path":  "packaging/launcher.entitlements",
+                      "sha256":  "77271216be6d55ed039f20c484cce5d5c221ac27f22e4754a8d55866b84c5b97"
+                  },
+                  {
+                      "path":  "packaging/macho_minimums.py",
+                      "sha256":  "a7a63aadd93362d6aadbea00d10b6854c8ae1a6284ed22b1b0b4ac15d12f409a"
+                  },
+                  {
+                      "path":  "packaging/make_icon.py",
+                      "sha256":  "a1ae2c45e61cf3ef6811b3896fb76cc36c35f21d414650f1a16b5bf1bbfbb57a"
+                  },
+                  {
+                      "path":  "packaging/observe_launchservices.swift",
+                      "sha256":  "563d92c5c7fa081f27d329f1ff6c6edb544595722e5e95cd138863ddd3d5891c"
+                  },
+                  {
+                      "path":  "packaging/verify_macos.py",
+                      "sha256":  "21700e4465940afbea8fedffbf78f07ffe16be71db0010e33259c426ecf3bd40"
+                  },
+                  {
+                      "path":  "packaging/tests/test_packaging.py",
+                      "sha256":  "71523e55fd186fe70d7d6fb737f639e26822387b8d9488a14b8e12a8396b3d30"
+                  },
+                  {
+                      "path":  "Services/CoverExtractor.cs",
+                      "sha256":  "ff5948460bb15e8974482636796228296b8e509ad967a16172c6afc61e990a4b"
+                  },
+                  {
+                      "path":  "Services/GameEntry.cs",
+                      "sha256":  "af9b9b1ec95f2391011cfd364f78d62d295ed58f2d26819084d69ab4ffb96dfe"
+                  },
+                  {
+                      "path":  "Services/LauncherServices.cs",
+                      "sha256":  "f1986f4b3b61fa1212186686738cc852208e9313d328fa0f291178c4e7be75e2"
+                  },
+                  {
+                      "path":  "Services/LauncherSmokeChecks.cs",
+                      "sha256":  "9261e99437e46c93393dc4027226e14b4148d989b38d5c4743db8886c6d14c82"
+                  },
+                  {
+                      "path":  "Services/MacLocalSigner.cs",
+                      "sha256":  "88e0561c0769d0459d3f3e93c435681ff8c0499255397b5070b7a91b38cb7bd4"
+                  },
+                  {
+                      "path":  "Services/MacPackageImporter.cs",
+                      "sha256":  "1cc083e605a739b7794711f5d91841aa12b886f911782c8da59a2ea4f946965c"
+                  },
+                  {
+                      "path":  "Services/MacQuarantine.cs",
+                      "sha256":  "5a5925fe5e3344f3164cef40c975c132f62bbf9cc172ff1e6916197a0c21b299"
+                  },
+                  {
+                      "path":  "Services/PlatformLauncher.cs",
+                      "sha256":  "47eec4646c0e0353b3e3c0813c0a4e934e25a16f8265f03342061ef94bb66a18"
+                  },
+                  {
+                      "path":  "Services/WebKitBridge.cs",
+                      "sha256":  "bfcc8e86159fbf9ac78701601b2d607b2ac7bd28389654e362b73d1794ccc4cb"
+                  },
+                  {
+                      "path":  "ViewModels/MainViewModel.cs",
+                      "sha256":  "c4df69ef984fb31b33bcc6a4cc0fde90463181d1931e22fca8fe616a447ed256"
+                  }
+              ],
+    "workflowSha256":  "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"
 }

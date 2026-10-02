@@ -161,6 +161,9 @@ def validate_ui_report(report: dict, require_input: bool) -> None:
         raise ValueError("The native launcher did not have a usable client viewport.")
     if require_input and (report.get("libraryEntryCount", 0) < 1 or report.get("exAnalysisReady") is not True):
         raise ValueError("The actual game was not imported and analyzed in the native library/eX UI.")
+    store = report.get("embeddedStore") or {}
+    if store.get("webViewCreated") is not True or "dustore.ru" not in str(store.get("url", "")):
+        raise ValueError("The Dustore store did not open inside the launcher's own WKWebView.")
 
 
 def inspect_rendered_image(image: Path, output: Path) -> dict:
@@ -299,6 +302,10 @@ def main() -> int:
         properties = plistlib.loads(entitlements.stdout)
         if properties.get("com.apple.security.cs.allow-jit") is not True:
             raise ValueError("The .NET/Avalonia apphost lacks its required JIT entitlement.")
+        # Without it a downloaded (quarantined) ad-hoc build cannot load its own
+        # libhostfxr.dylib on a user's Mac, even though an unquarantined CI copy starts.
+        if properties.get("com.apple.security.cs.disable-library-validation") is not True:
+            raise ValueError("The ad-hoc apphost lacks disable-library-validation and cannot load its bundled .NET libraries once quarantined.")
         record["signing"] = {"verifiedAdHoc": True, "developerId": False, "notarized": False, "entitlements": properties}
         record["nativeDependencies"] = inspect_dependencies(bundle, args.rid)
         icon = bundle / "Contents" / "Resources" / "DustoreLauncherV.icns"

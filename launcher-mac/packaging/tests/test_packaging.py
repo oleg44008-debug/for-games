@@ -90,9 +90,12 @@ class PackagingBoundaryChecks(unittest.TestCase):
     def test_ui_success_requires_open_window_and_actual_game_analysis(self):
         report = {"status": "Pass", "windowOpened": True, "viewModelLoaded": True,
                   "originalLogoUnchanged": True, "clientWidth": 1180, "clientHeight": 780,
-                  "libraryEntryCount": 1, "exAnalysisReady": True}
+                  "libraryEntryCount": 1, "exAnalysisReady": True,
+                  "embeddedStore": {"webViewCreated": True, "url": "https://dustore.ru/explore"}}
         validate_ui_report(report, True)
-        for field, value in (("windowOpened", False), ("libraryEntryCount", 0), ("exAnalysisReady", False)):
+        for field, value in (("windowOpened", False), ("libraryEntryCount", 0), ("exAnalysisReady", False),
+                             ("embeddedStore", None), ("embeddedStore", {"webViewCreated": False, "url": "https://dustore.ru/explore"}),
+                             ("embeddedStore", {"webViewCreated": True, "url": "about:blank"})):
             invalid = {**report, field: value}
             with self.subTest(field=field), self.assertRaises(ValueError):
                 validate_ui_report(invalid, True)

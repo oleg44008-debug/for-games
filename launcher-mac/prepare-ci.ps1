@@ -7,7 +7,8 @@ $taskMacMirror = Join-Path $taskCiRoot 'launcher-mac'
 $taskMirrorPrefix = [IO.Path]::GetFullPath($taskMacMirror).TrimEnd('\') + '\'
 $taskManifest = @()
 foreach ($taskSourceFile in Get-ChildItem -LiteralPath $taskMacSource -File -Recurse -Force) {
-    $taskRelative = [IO.Path]::GetRelativePath($taskMacSource, $taskSourceFile.FullName)
+    # Windows PowerShell 5.1 has no Path.GetRelativePath; every file is under the source root.
+    $taskRelative = $taskSourceFile.FullName.Substring($taskMacSource.TrimEnd('\').Length + 1)
     $taskSegments = $taskRelative.Split([char[]]'\/')
     if ($taskSegments[0] -in @('bin', 'obj', 'artifacts', 'publish', 'delivery', '.github', '.git') -or $taskSourceFile.Name -in @('download-artifact.py', 'validate-release.py') -or $taskSegments -contains '__pycache__' -or $taskSourceFile.Extension -eq '.pyc') { continue }
     $taskDestination = [IO.Path]::GetFullPath((Join-Path $taskMacMirror $taskRelative))

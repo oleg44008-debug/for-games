@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Media.Imaging;
+using DustoreLauncherV.Mac.Controls;
 using DustoreLauncherV.Mac.Services;
 using DustoreX.AutoConverter;
 
@@ -19,13 +21,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly LauncherServices _services;
     private IReadOnlyList<GameEntry> _entries = Array.Empty<GameEntry>();
     private readonly List<string> _log = new();
+    private readonly Dictionary<Guid, Bitmap> _covers = new();
+    private readonly HashSet<Guid> _coverAttempts = new();
     private CancellationTokenSource? _operation;
     private GameItemViewModel? _selectedGame;
     private string _search = "", _source = "", _gameName = "", _output = "";
     private string _status = "Добавьте игру в библиотеку или выберите сборку в eX.";
     private string _error = "", _result = "", _runtimeVersion = "", _runtimePath = "";
+    private string _webTitle = "", _webAddress = "";
+    private double _webProgress;
+    private bool _webLoading, _webCanGoBack, _webCanGoForward;
     private bool _busy;
     private string _section = "library";
+    private string _shelf = "all";
     private ConversionPlan? _plan;
     private TargetChoice _target;
     private ArchitectureChoice _architecture;
@@ -42,7 +50,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
         LibraryCommand = new RelayCommand(() => Section = "library");
         ExCommand = new RelayCommand(() => Section = "ex");
         SettingsCommand = new RelayCommand(() => Section = "settings");
-        StoreCommand = new AsyncCommand(() => PerformAsync("Открываю Dustore…", ct => _services.OpenUrlAsync("https://dustore.ru/explore", ct)), () => !IsBusy);
+        StoreCommand = new RelayCommand(() => Section = "store");
+        HomeCommand = new RelayCommand(() => Section = "home");
+        JamsCommand = new RelayCommand(() => Section = "jams");
+        AssetsCommand = new RelayCommand(() => Section = "assets");
+        OpenInBrowserCommand = new AsyncCommand(() => PerformAsync("Открываю страницу в браузере…",
+            ct => _services.OpenUrlAsync(string.IsNullOrWhiteSpace(WebAddress) ? WebStartUrl : WebAddress, ct)), () => !IsBusy);
+        ShelfAllCommand = new RelayCommand(() => Shelf = "all");
+        ShelfReadyCommand = new RelayCommand(() => Shelf = "ready");
+        ShelfExCommand = new RelayCommand(() => Shelf = "ex");
+        SelectGameCommand = new RelayCommand<GameItemViewModel>(game => SelectedGame = game);
+        TargetMacCommand = new RelayCommand(() => SelectedTarget = Targets[0], () => !IsBusy);
+        TargetWindowsCommand = new RelayCommand(() => SelectedTarget = Targets[1], () => !IsBusy);
         LaunchCommand = new AsyncCommand(LaunchSelectedAsync, () => CanLaunch);
         RevealGameCommand = new AsyncCommand(() => SelectedGame is null ? Task.CompletedTask : PerformAsync("Открываю папку игры…", ct => _services.RevealAsync(SelectedGame.SourcePath, ct)), () => SelectedGame is not null && !IsBusy);
         RemoveGameCommand = new AsyncCommand(RemoveSelectedAsync, () => SelectedGame is not null && !IsBusy);
@@ -58,12 +77,23 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public ObservableCollection<GameItemViewModel> Games { get; } = new();
+    public ObservableCollection<object> ShelfItems { get; } = new();
     public IReadOnlyList<TargetChoice> Targets { get; }
     public IReadOnlyList<ArchitectureChoice> Architectures { get; }
     public ICommand LibraryCommand { get; }
     public ICommand ExCommand { get; }
     public ICommand StoreCommand { get; }
+    public ICommand HomeCommand { get; }
+    public ICommand JamsCommand { get; }
+    public ICommand AssetsCommand { get; }
+    public ICommand OpenInBrowserCommand { get; }
     public ICommand SettingsCommand { get; }
+    public ICommand ShelfAllCommand { get; }
+    public ICommand ShelfReadyCommand { get; }
+    public ICommand ShelfExCommand { get; }
+    public ICommand SelectGameCommand { get; }
+    public ICommand TargetMacCommand { get; }
+    public ICommand TargetWindowsCommand { get; }
     public ICommand LaunchCommand { get; }
     public ICommand RevealGameCommand { get; }
     public ICommand RemoveGameCommand { get; }
@@ -83,34 +113,129 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool HasPlan => _plan is not null;
     public bool HasSelection => SelectedGame is not null;
     public bool NoSelection => !HasSelection;
-    public bool IsLibrary => Section == "library";
-    public bool IsEx => Section == "ex";
-    public bool IsSettings => Section == "settings";
     public bool CanAnalyze => !IsBusy && !string.IsNullOrWhiteSpace(SourcePath);
     public bool CanConvert => !IsBusy && _plan?.CanConvert == true && !string.IsNullOrWhiteSpace(OutputPath) && !string.IsNullOrWhiteSpace(GameName);
     public bool CanLaunch => !IsBusy && SelectedGame?.CanLaunch == true;
-    public string LibraryCount => $"{_entries.Count} игр";
+    public string LibraryCount => _entries.Count + " " + Plural(_entries.Count, "игра", "игры", "игр");
     public string FilterCount => Games.Count == 0 ? (_entries.Count == 0 ? "Библиотека пока пуста" : "Ничего не найдено") : $"Показано: {Games.Count}";
     public string DataDirectory => _services.DataDirectory;
     public string CacheDirectory => RuntimeCatalog.CacheDirectory;
     public string PlatformLabel => "macOS · " + (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "Apple Silicon" : "Intel / x64");
-    public string PlanTitle => _plan?.Title ?? "Выберите игру и нажмите «Анализировать»";
-    public string PlanDetail => _plan?.Detail ?? "eX проверит движок и определит доступный способ переноса. Исходные файлы останутся на месте.";
-    public string PlanFacts => _plan is null ? "Godot · LÖVE · Ren’Py · NW.js" : $"{_plan.Engine}   ·   {_plan.SourcePlatform} → {_plan.Target}";
-    public string PlanWarnings => _plan is null ? "" : string.Join("\n\n", _plan.Warnings);
-    public bool HasWarnings => _plan?.Warnings.Count > 0;
-    public string ProgressLog => string.Join("\n", _log);
+    public static string AppVersion => typeof(MainViewModel).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "";
+    public string RailVersion => "LAUNCHER " + AppVersion + " · MAC";
+
+    // Sections. Web sections share one in-app WKWebView.
+    public string Section
+    {
+        get => _section;
+        set
+        {
+            if (!Set(ref _section, value)) return;
+            foreach (string property in new[] { nameof(IsLibrary), nameof(IsEx), nameof(IsSettings), nameof(IsStore), nameof(IsHome), nameof(IsJams), nameof(IsAssets),
+                nameof(IsWeb), nameof(WebStartUrl), nameof(HeaderTitle), nameof(HeaderSubtitle), nameof(ShowSearch) })
+                Notify(property);
+        }
+    }
+    public bool IsLibrary => Section == "library";
+    public bool IsEx => Section == "ex";
+    public bool IsSettings => Section == "settings";
+    public bool IsStore => Section == "store";
+    public bool IsHome => Section == "home";
+    public bool IsJams => Section == "jams";
+    public bool IsAssets => Section == "assets";
+    public bool IsWeb => WebStartUrlFor(Section) is not null;
+    public bool ShowSearch => IsLibrary && HasGames;
+    public string HeaderTitle => Section switch
+    {
+        "ex" => "eX · перенос игр", "settings" => "Настройки", "store" => "Магазин", "home" => "Главная Dustore",
+        "jams" => "Спринты", "assets" => "Ассеты", _ => "Библиотека"
+    };
+    public string HeaderSubtitle => Section switch
+    {
+        "library" => LibraryCount,
+        "ex" => "Windows · macOS",
+        "settings" => PlatformLabel,
+        _ => string.IsNullOrWhiteSpace(WebTitle) ? "dustore.ru" : WebTitle
+    };
+
+    public bool IsWebSupported => NativeWebView.IsSupported;
+    public bool IsWebUnsupported => !IsWebSupported;
+    public string WebStartUrl => WebStartUrlFor(Section) ?? "https://dustore.ru/";
+    public static string? WebStartUrlFor(string section) => section switch
+    {
+        "store" => "https://dustore.ru/explore",
+        "home" => "https://dustore.ru/",
+        "jams" => "https://dustore.ru/jams",
+        "assets" => "https://dustore.ru/assetstore",
+        _ => null
+    };
+    public string WebTitle { get => _webTitle; private set => Set(ref _webTitle, value); }
+    public string WebAddress { get => _webAddress; private set => Set(ref _webAddress, value); }
+    public double WebProgress { get => _webProgress; private set => Set(ref _webProgress, value); }
+    public bool WebLoading { get => _webLoading; private set => Set(ref _webLoading, value); }
+    public bool WebCanGoBack { get => _webCanGoBack; private set => Set(ref _webCanGoBack, value); }
+    public bool WebCanGoForward { get => _webCanGoForward; private set => Set(ref _webCanGoForward, value); }
+
+    public void UpdateWebState(string url, string title, bool loading, double progress, bool canGoBack, bool canGoForward)
+    {
+        WebAddress = url;
+        WebTitle = title;
+        WebLoading = loading;
+        WebProgress = loading ? Math.Clamp(progress, 0.08, 1) * 100 : 0;
+        WebCanGoBack = canGoBack;
+        WebCanGoForward = canGoForward;
+        Notify(nameof(HeaderSubtitle));
+    }
+
+    // Library shelf and hero.
+    public bool HasGames => _entries.Count > 0;
+    public bool IsLibraryEmpty => _entries.Count == 0;
+    public string Shelf { get => _shelf; set { if (Set(ref _shelf, value)) { Notify(nameof(IsShelfAll)); Notify(nameof(IsShelfReady)); Notify(nameof(IsShelfEx)); ApplyFilter(); } } }
+    public bool IsShelfAll => Shelf == "all";
+    public bool IsShelfReady => Shelf == "ready";
+    public bool IsShelfEx => Shelf == "ex";
+    public int CountAll => _entries.Count;
+    public int CountReady => _entries.Count(e => e.CanLaunchOnMac);
+    public int CountEx => _entries.Count(e => !e.CanLaunchOnMac);
+    public bool ShelfEmpty => Games.Count == 0 && HasGames;
     public string SelectedTitle => SelectedGame?.Name ?? "Ваша библиотека";
     public string SelectedSource => SelectedGame?.SourcePath ?? "";
     public string SelectedStatus => SelectedGame?.Status ?? "";
-    public string SelectedAdded => SelectedGame is null ? "" : SelectedGame.Entry.AddedUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
-    public string SelectedLastPlayed => SelectedGame?.Entry.LastPlayedUtc is { } when ? when.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "Ещё не запускалась";
-    public string LaunchLabel => "Играть";
-    public string LaunchHint => SelectedGame is null ? "" : SelectedGame.CanLaunch ? "Приложение откроется обычным способом macOS." : "Для Windows-сборки сначала создайте macOS-пакет через eX. Для неизвестного формата нужен готовый Mac-порт.";
+    public string SelectedAdded => SelectedGame is null ? "" : SelectedGame.Entry.AddedUtc.ToLocalTime().ToString("d MMM yyyy");
+    public string SelectedLastPlayed => SelectedGame?.Entry.LastPlayedUtc is { } when ? when.ToLocalTime().ToString("d MMM, HH:mm") : "Не запускали";
+    public string SelectedKind => SelectedGame?.KindChip ?? "";
+    public Bitmap? SelectedCover => SelectedGame?.Cover;
+    public bool SelectedHasCover => SelectedGame?.Cover is not null;
+    public bool SelectedNoCover => SelectedGame is not null && SelectedGame.Cover is null;
+    public string SelectedMonogram => SelectedGame?.Monogram ?? "D";
+    public bool SelectedReady => SelectedGame?.CanLaunch == true;
+    public bool SelectedNeedsEx => SelectedGame is not null && !SelectedGame.CanLaunch;
+    public string SelectedStateLabel => SelectedGame is null ? "" : SelectedGame.CanLaunch ? "ГОТОВО К ЗАПУСКУ"
+        : !SelectedGame.Entry.SourceExists ? "ФАЙЛ НЕ НАЙДЕН" : "НУЖЕН ПЕРЕНОС ЧЕРЕЗ eX";
+    public string LaunchLabel => "ИГРАТЬ";
+    public string LaunchHint => SelectedGame is null ? "" : SelectedGame.CanLaunch ? "Приложение откроется обычным способом macOS."
+        : "Для Windows-сборки сначала создайте macOS-пакет через eX. Для неизвестного формата нужен готовый Mac-порт.";
 
-    public string Section { get => _section; set { if (Set(ref _section, value)) { Notify(nameof(IsLibrary)); Notify(nameof(IsEx)); Notify(nameof(IsSettings)); } } }
+    // eX.
+    public string PlanTitle => _plan?.Title ?? "Выберите игру — eX проверит её";
+    public string PlanDetail => _plan?.Detail ?? "eX определит движок и доступный способ переноса. Исходные файлы останутся на месте.";
+    public string PlanFacts => _plan is null ? "Godot · LÖVE · Ren’Py · NW.js" : $"{_plan.Engine}  ·  {_plan.SourcePlatform} → {_plan.Target}";
+    public string PlanWarnings => _plan is null ? "" : string.Join("\n\n", _plan.Warnings);
+    public bool HasWarnings => _plan?.Warnings.Count > 0;
+    public string PlanChip => _plan is null ? "Ожидает анализа" : _plan.CanConvert ? "Доступен перенос" : "Перенос недоступен";
+    public bool PlanReady => _plan?.CanConvert == true;
+    public bool PlanBlocked => _plan is not null && !_plan.CanConvert;
+    public bool PlanPending => _plan is null;
+    public string ProgressLog => string.Join("\n", _log);
+    public string SourceDisplayName => string.IsNullOrWhiteSpace(SourcePath) ? "Игра не выбрана" : Path.GetFileName(SourcePath.TrimEnd('/', '\\'));
+    public bool HasSource => !string.IsNullOrWhiteSpace(SourcePath);
+    public bool IsMacTarget => SelectedTarget.Platform == TargetPlatform.MacOS;
+    public bool IsTargetWindows => !IsMacTarget;
+    public bool CanChooseArchitecture => IsMacTarget && !IsBusy;
+    public string ConvertLabel => IsMacTarget ? "Создать пакет macOS" : "Создать пакет Windows";
+
     public string Search { get => _search; set { if (Set(ref _search, value ?? "")) ApplyFilter(); } }
-    public string SourcePath { get => _source; set { if (Set(ref _source, value)) { ResultPath = ""; ResetPlan(); } } }
+    public string SourcePath { get => _source; set { if (Set(ref _source, value)) { ResultPath = ""; Notify(nameof(SourceDisplayName)); Notify(nameof(HasSource)); ResetPlan(); } } }
     public string GameName { get => _gameName; set { if (Set(ref _gameName, value)) UpdateActions(); } }
     public string OutputPath { get => _output; set { if (Set(ref _output, value)) UpdateActions(); } }
     public string RuntimeVersion { get => _runtimeVersion; set => Set(ref _runtimeVersion, value); }
@@ -118,11 +243,31 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string Status { get => _status; private set => Set(ref _status, value); }
     public string Error { get => _error; private set { if (Set(ref _error, value)) Notify(nameof(HasError)); } }
     public string ResultPath { get => _result; private set { if (Set(ref _result, value)) { Notify(nameof(HasResult)); UpdateActions(); } } }
-    public TargetChoice SelectedTarget { get => _target; set { if (value is not null && Set(ref _target, value)) { ResetPlan(); SetDefaultOutput(); Notify(nameof(IsMacTarget)); } } }
+    public TargetChoice SelectedTarget
+    {
+        get => _target;
+        set
+        {
+            if (value is null || !Set(ref _target, value)) return;
+            ResetPlan();
+            SetDefaultOutput();
+            foreach (string property in new[] { nameof(IsMacTarget), nameof(IsTargetWindows), nameof(ConvertLabel), nameof(CanChooseArchitecture) }) Notify(property);
+        }
+    }
     public ArchitectureChoice SelectedArchitecture { get => _architecture; set { if (value is not null && Set(ref _architecture, value)) ResetPlan(); } }
-    public bool IsMacTarget => SelectedTarget.Platform == TargetPlatform.MacOS;
-    public bool CanChooseArchitecture => IsMacTarget && !IsBusy;
-    public GameItemViewModel? SelectedGame { get => _selectedGame; set { if (Set(ref _selectedGame, value)) { foreach (string property in new[] { nameof(HasSelection), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus), nameof(SelectedAdded), nameof(SelectedLastPlayed), nameof(LaunchHint) }) Notify(property); UpdateActions(); } } }
+    public GameItemViewModel? SelectedGame
+    {
+        get => _selectedGame;
+        set
+        {
+            var previous = _selectedGame;
+            if (!Set(ref _selectedGame, value)) return;
+            if (previous is not null) previous.IsSelected = false;
+            if (value is not null) value.IsSelected = true;
+            NotifySelection();
+            UpdateActions();
+        }
+    }
 
     public Task InitializeAsync() => PerformAsync("Загружаю библиотеку…", async cancellation =>
     {
@@ -137,6 +282,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         await PerformAsync("Добавляю игру…", async ct =>
         {
             var entry = await _services.AddGameAsync(path, ct);
+            Shelf = "all";
             await ReloadLibraryAsync(ct, entry.Id);
             Section = "library";
             Status = "Игра добавлена. Исходные файлы сохранены.";
@@ -156,6 +302,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public void CancelOperation() => _operation?.Cancel();
+    public void DismissError() => Error = "";
 
     public void ReportError(Exception error)
     {
@@ -167,7 +314,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         _plan = await _services.InspectAsync(SourcePath, SelectedTarget.Platform, EffectiveArchitecture, ct);
         RuntimeVersion = _plan.RuntimeVersion ?? "";
-        foreach (string property in new[] { nameof(HasPlan), nameof(PlanTitle), nameof(PlanDetail), nameof(PlanFacts), nameof(PlanWarnings), nameof(HasWarnings) }) Notify(property);
+        NotifyPlan();
         Status = _plan.CanConvert ? "Анализ завершён. Проверьте систему и путь готового ZIP." : _plan.Title;
     });
 
@@ -214,17 +361,57 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         _entries = await _services.LoadLibraryAsync(ct);
         ApplyFilter(select);
-        Notify(nameof(LibraryCount));
+        foreach (string property in new[] { nameof(LibraryCount), nameof(HasGames), nameof(IsLibraryEmpty), nameof(CountAll), nameof(CountReady), nameof(CountEx), nameof(HeaderSubtitle), nameof(ShowSearch), nameof(ShelfEmpty) })
+            Notify(property);
+        _ = LoadCoversAsync();
+    }
+
+    private async Task LoadCoversAsync()
+    {
+        foreach (var entry in _entries.ToArray())
+        {
+            if (_covers.ContainsKey(entry.Id) || !_coverAttempts.Add(entry.Id)) continue;
+            string? path;
+            try { path = await CoverExtractor.GetCoverAsync(entry, _services.DataDirectory, CancellationToken.None); }
+            catch (Exception) { continue; }
+            if (path is null) continue;
+            try { _covers[entry.Id] = new Bitmap(path); }
+            catch (Exception) { continue; }
+            foreach (var game in Games.Where(g => g.Entry.Id == entry.Id)) game.Cover = _covers[entry.Id];
+            if (SelectedGame?.Entry.Id == entry.Id) NotifySelection();
+        }
     }
 
     private void ApplyFilter(Guid? select = null)
     {
         select ??= SelectedGame?.Entry.Id;
         string query = Search.Trim();
+        var visible = _entries.OrderByDescending(g => g.AddedUtc)
+            .Where(g => query.Length == 0 || g.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || g.SourcePath.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .Where(g => Shelf switch { "ready" => g.CanLaunchOnMac, "ex" => !g.CanLaunchOnMac, _ => true })
+            .ToArray();
         Games.Clear();
-        foreach (var entry in _entries.OrderByDescending(g => g.AddedUtc).Where(g => query.Length == 0 || g.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || g.SourcePath.Contains(query, StringComparison.OrdinalIgnoreCase))) Games.Add(new GameItemViewModel(entry));
+        ShelfItems.Clear();
+        foreach (var entry in visible)
+        {
+            var item = new GameItemViewModel(entry) { Cover = _covers.GetValueOrDefault(entry.Id) };
+            Games.Add(item);
+            ShelfItems.Add(item);
+        }
+        ShelfItems.Add(AddGameTile.Instance);
+        _selectedGame = null;
         SelectedGame = Games.FirstOrDefault(g => g.Entry.Id == select) ?? Games.FirstOrDefault();
+        if (SelectedGame is null) { NotifySelection(); UpdateActions(); }
         Notify(nameof(FilterCount));
+        Notify(nameof(ShelfEmpty));
+    }
+
+    private void NotifySelection()
+    {
+        foreach (string property in new[] { nameof(HasSelection), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus),
+            nameof(SelectedAdded), nameof(SelectedLastPlayed), nameof(LaunchHint), nameof(SelectedCover), nameof(SelectedHasCover), nameof(SelectedNoCover),
+            nameof(SelectedMonogram), nameof(SelectedKind), nameof(SelectedReady), nameof(SelectedNeedsEx), nameof(SelectedStateLabel) })
+            Notify(property);
     }
 
     private string EffectiveArchitecture => SelectedTarget.Platform == TargetPlatform.Windows ? "x64" : SelectedArchitecture.Key;
@@ -237,8 +424,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void ResetPlan()
     {
         _plan = null;
-        foreach (string property in new[] { nameof(HasPlan), nameof(PlanTitle), nameof(PlanDetail), nameof(PlanFacts), nameof(PlanWarnings), nameof(HasWarnings) }) Notify(property);
+        NotifyPlan();
         UpdateActions();
+    }
+    private void NotifyPlan()
+    {
+        foreach (string property in new[] { nameof(HasPlan), nameof(PlanTitle), nameof(PlanDetail), nameof(PlanFacts), nameof(PlanWarnings), nameof(HasWarnings),
+            nameof(PlanChip), nameof(PlanReady), nameof(PlanBlocked), nameof(PlanPending) })
+            Notify(property);
     }
     private async Task PerformAsync(string status, Func<CancellationToken, Task> action)
     {
@@ -261,8 +454,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void UpdateActions()
     {
         foreach (string property in new[] { nameof(NotBusy), nameof(CanAnalyze), nameof(CanConvert), nameof(CanLaunch), nameof(CanChooseArchitecture) }) Notify(property);
-        foreach (var command in new[] { LibraryCommand, ExCommand, SettingsCommand, StoreCommand, LaunchCommand, RevealGameCommand, RemoveGameCommand, ConvertGameCommand, AnalyzeCommand, ConvertCommand, CancelCommand, RevealOutputCommand, RevealDataCommand, RevealCacheCommand, RefreshCommand })
+        foreach (var command in new[] { LibraryCommand, ExCommand, SettingsCommand, StoreCommand, OpenInBrowserCommand, TargetMacCommand, TargetWindowsCommand, LaunchCommand,
+            RevealGameCommand, RemoveGameCommand, ConvertGameCommand, AnalyzeCommand, ConvertCommand, CancelCommand, RevealOutputCommand, RevealDataCommand, RevealCacheCommand, RefreshCommand })
             if (command is ICommandNotifications notifications) notifications.RaiseCanExecuteChanged();
+    }
+    private static string Plural(int count, string one, string few, string many)
+    {
+        int mod100 = count % 100, mod10 = count % 10;
+        return mod100 is >= 11 and <= 14 ? many : mod10 == 1 ? one : mod10 is >= 2 and <= 4 ? few : many;
     }
     private bool Set<T>(ref T field, T value, [CallerMemberName] string? property = null)
     {
@@ -274,15 +473,33 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
 public sealed record TargetChoice(string Label, TargetPlatform Platform);
 public sealed record ArchitectureChoice(string Label, string Key);
-public sealed class GameItemViewModel
+
+/// <summary>The dashed "add a game" tile that closes the library shelf.</summary>
+public sealed class AddGameTile
 {
+    public static readonly AddGameTile Instance = new();
+    private AddGameTile() { }
+}
+
+public sealed class GameItemViewModel : INotifyPropertyChanged
+{
+    private bool _selected;
+    private Bitmap? _cover;
     public GameItemViewModel(GameEntry entry) => Entry = entry;
+    public event PropertyChangedEventHandler? PropertyChanged;
     public GameEntry Entry { get; }
     public string Name => Entry.Name;
     public string SourcePath => Entry.SourcePath;
     public bool CanLaunch => Entry.CanLaunchOnMac;
     public string Status => CanLaunch ? "Готова к запуску на Mac" : !Entry.SourceExists ? "Исходный файл не найден" : Entry.Kind + " · перенос через eX";
+    public string ShortStatus => CanLaunch ? "ГОТОВА" : !Entry.SourceExists ? "НЕ НАЙДЕНА" : "НУЖЕН eX";
+    public string KindChip => CanLaunch ? "MACOS" : Entry.Kind.ToUpperInvariant();
     public string Monogram => string.IsNullOrWhiteSpace(Name) ? "D" : Name[..1].ToUpperInvariant();
+    public bool IsSelected { get => _selected; set { if (_selected == value) return; _selected = value; Raise(nameof(IsSelected)); } }
+    public Bitmap? Cover { get => _cover; set { if (ReferenceEquals(_cover, value)) return; _cover = value; Raise(nameof(Cover)); Raise(nameof(HasCover)); Raise(nameof(NoCover)); } }
+    public bool HasCover => Cover is not null;
+    public bool NoCover => Cover is null;
+    private void Raise(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
 }
 
 internal interface ICommandNotifications { void RaiseCanExecuteChanged(); }
@@ -295,6 +512,14 @@ internal sealed class RelayCommand : ICommand, ICommandNotifications
     public bool CanExecute(object? parameter) => _canExecute();
     public void Execute(object? parameter) { if (CanExecute(parameter)) _execute(); }
     public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+}
+internal sealed class RelayCommand<T> : ICommand where T : class
+{
+    private readonly Action<T> _execute;
+    public RelayCommand(Action<T> execute) => _execute = execute;
+    public event EventHandler? CanExecuteChanged { add { } remove { } }
+    public bool CanExecute(object? parameter) => parameter is T;
+    public void Execute(object? parameter) { if (parameter is T value) _execute(value); }
 }
 internal sealed class AsyncCommand : ICommand, ICommandNotifications
 {
