@@ -310,6 +310,10 @@ await suite.RunAsync("Wine wrapper prefers the launcher-installed Wine and skips
     int path = script.IndexOf("command -v wine", StringComparison.Ordinal);
     CheckSuite.Assert(runtime > 0 && path > runtime, "Launcher-installed Wine is not searched before a system Wine.");
     CheckSuite.Assert(script.Contains("WINEDLLOVERRIDES=\"${WINEDLLOVERRIDES:-mscoree,mshtml=}\"", StringComparison.Ordinal), "Wine Mono/Gecko install prompts are not suppressed.");
+    int boot = script.IndexOf("wineboot --init", StringComparison.Ordinal), wait = script.IndexOf("\"$WINESERVER\" -w", StringComparison.Ordinal);
+    int game = script.IndexOf("exec \"$WINE\" 'Game.exe'", StringComparison.Ordinal);
+    CheckSuite.Assert(boot > 0 && wait > boot && game > wait && script.Contains("$WINEPREFIX/system.reg", StringComparison.Ordinal),
+        "A new Wine prefix is not built and settled before the game starts.");
 });
 await suite.RunAsync("A build with only helper executables is refused instead of guessed", box =>
 {

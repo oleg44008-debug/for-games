@@ -63,7 +63,16 @@ public static class CompatibilityPackager
                     "export WINEPREFIX=\"$HOME/Library/Application Support/DustoreX/Wine/" + SafeId(request.GameName) + "\"\n" +
                     // Games ship their own runtimes (Unity embeds Mono); skip Wine Mono/Gecko install prompts.
                     "export WINEDLLOVERRIDES=\"${WINEDLLOVERRIDES:-mscoree,mshtml=}\"\nexport WINEDEBUG=\"${WINEDEBUG:--all}\"\n" +
-                    "mkdir -p -- \"$WINEPREFIX\"\ncd -- " + workingDirectory + "\nexec \"$WINE\" " + shellExe + " \"$@\"\n";
+                    "mkdir -p -- \"$WINEPREFIX\"\n" +
+                    // A game started into a missing prefix waits for wineboot only briefly; on a slow Mac it then
+                    // fails with "could not load kernel32.dll". Build the prefix first and wait for it to settle.
+                    "if [ ! -f \"$WINEPREFIX/system.reg\" ]; then\n" +
+                    "  /usr/bin/osascript -e 'display notification \"Первый запуск: Wine готовит окружение игры. Это займёт до пары минут.\" with title \"DustoreX\"' >/dev/null 2>&1 || true\n" +
+                    "  \"$WINE\" wineboot --init >/dev/null 2>&1 || true\n" +
+                    "  WINESERVER=\"$(dirname \"$WINE\")/wineserver\"; [ -x \"$WINESERVER\" ] || WINESERVER=\"$(command -v wineserver || true)\"\n" +
+                    "  if [ -n \"$WINESERVER\" ]; then \"$WINESERVER\" -w || true; fi\n" +
+                    "fi\n" +
+                    "cd -- " + workingDirectory + "\nexec \"$WINE\" " + shellExe + " \"$@\"\n";
                 Write(zip, root + "MacOS/launch", script, true);
                 var plist = new XDocument(new XElement("plist", new XAttribute("version", "1.0"), new XElement("dict",
                     new XElement("key", "CFBundleExecutable"), new XElement("string", "launch"),
