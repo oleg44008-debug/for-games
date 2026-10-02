@@ -1,6 +1,6 @@
 ﻿{
     "product":  "DUSTORE LAUNCHER V macOS",
-    "version":  "5.2.4",
+    "version":  "5.2.5",
     "files":  [
                   {
                       "path":  "App.axaml",
@@ -8,7 +8,7 @@
                   },
                   {
                       "path":  "App.axaml.cs",
-                      "sha256":  "d5e41bc1bbfce89b99cd9274ea73a4ba2e3864aaee91f14e9e91af652a0e8e0b"
+                      "sha256":  "61b18ad8053c325d46d7de0ef8f2b662d5ea1cdc42f705cfe446f7ba26014411"
                   },
                   {
                       "path":  "ci-status.py",
@@ -16,7 +16,7 @@
                   },
                   {
                       "path":  "DustoreLauncherV.Mac.csproj",
-                      "sha256":  "fc8ecb99f4df185d50be66f853cb7ea410ce723154de58fe50381c5b1d2e7d7e"
+                      "sha256":  "4c254d2a02e01ad2c531fccb4acef10114f25251f04ea23e9c738052dd0a1cb2"
                   },
                   {
                       "path":  "MainWindow.axaml",
@@ -36,7 +36,7 @@
                   },
                   {
                       "path":  "README.md",
-                      "sha256":  "9c28c3faf85386761a4a82e784465f369f282968a84334afad8974a9926b33ec"
+                      "sha256":  "809a2ac9d21795cd2a5d45e4400091dd91885294aaad2b0c17fd8e4e83fa9df7"
                   },
                   {
                       "path":  "StartupDiagnostics.cs",
@@ -84,11 +84,11 @@
                   },
                   {
                       "path":  "packaging/verify_macos.py",
-                      "sha256":  "0fa9799921bda94581d06c46634dc8c1ebd536b7a4751637532c62883d9b1f41"
+                      "sha256":  "80c3ddc27116408f3a7ef07580a7dba20be2cd8faec63bbf06ea1d9a08d61c33"
                   },
                   {
                       "path":  "packaging/tests/test_packaging.py",
-                      "sha256":  "9c9e62fc3aac69ddc55975eed1758415a1b2eba391db57de932aac5ac25d9148"
+                      "sha256":  "18ce8bb9fb911814f5df59c64034a7126586a02c01387aff5f5611f421e54e34"
                   },
                   {
                       "path":  "Services/CoverExtractor.cs",
@@ -116,7 +116,7 @@
                   },
                   {
                       "path":  "Services/MacQuarantine.cs",
-                      "sha256":  "5a5925fe5e3344f3164cef40c975c132f62bbf9cc172ff1e6916197a0c21b299"
+                      "sha256":  "5ab592aeadc441f067043e319d26fdb0b2b638abcef648ead4b8e21319d82ee6"
                   },
                   {
                       "path":  "Services/PlatformLauncher.cs",
@@ -124,15 +124,15 @@
                   },
                   {
                       "path":  "Services/WebKitBridge.cs",
-                      "sha256":  "12e36481d3a1e926bf175b561efa7539338ec6e7b9321139102039b12c8eec10"
+                      "sha256":  "375e17405f248edffa9acd643f1b61b99908bbfbc1a07a8493728b382eb9539b"
                   },
                   {
                       "path":  "Services/WebKitDownloads.cs",
-                      "sha256":  "71331d32369fce41327d3ebcaab15d62f50e9982a33230e4f422b11acb89675b"
+                      "sha256":  "ca3542442a824ba076045b0f4c6e0ec1bb98c906e4b9ed82163a0f2ae090c7f0"
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "fc506d1ad94bc3158d3587db5a6c56378def88034febf93c15f73707c119d3f2"
+                      "sha256":  "5cd8c356a3f2b21162582dd2b0146c4442d5b9ba43350bb5c9947e21767b7565"
                   }
               ],
     "workflowSha256":  "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"

@@ -2,7 +2,11 @@ using System.Runtime.InteropServices;
 
 namespace DustoreLauncherV.Mac.Services;
 
-/// <summary>New imported copies retain the downloaded archive's quarantine marker.</summary>
+/// <summary>
+/// New imported copies retain the downloaded archive's quarantine marker. The one exception,
+/// chosen by the owner like Steam does, is a game the launcher itself downloaded from the
+/// Dustore store (<see cref="RemoveFromStoreDownload"/>); files from any other site keep it.
+/// </summary>
 internal static class MacQuarantine
 {
     private const string Attribute = "com.apple.quarantine";
@@ -34,10 +38,22 @@ internal static class MacQuarantine
         return value;
     }
 
+    /// <summary>Clears the marker from one file the launcher downloaded from a trusted store page.</summary>
+    internal static void RemoveFromStoreDownload(string downloadedFile)
+    {
+        if (!OperatingSystem.IsMacOS() || !File.Exists(downloadedFile)) return;
+        if (RemoveXattr(downloadedFile, Attribute, 0) != 0)
+        {
+            int error = Marshal.GetLastPInvokeError();
+            if (error is not (NoAttribute or NotSupported))
+                throw new IOException("Не удалось снять отметку загрузки с игры из магазина. errno=" + error);
+        }
+    }
+
     internal static void Write(string path, byte[] value)
     {
         if (!OperatingSystem.IsMacOS()) return;
-        // No removal or clearing: copies keep the same marker, so normal macOS checks still apply.
+        // Copies keep the same marker, so normal macOS checks still apply to them.
         if (SetXattr(path, Attribute, value, (nuint)value.Length, 0, 0) != 0)
             throw new IOException("Не удалось сохранить quarantine у новой копии приложения. errno=" + Marshal.GetLastPInvokeError());
     }
@@ -45,6 +61,10 @@ internal static class MacQuarantine
     [DllImport("/usr/lib/libSystem.B.dylib", EntryPoint = "getxattr", SetLastError = true)]
     private static extern nint GetXattr([MarshalAs(UnmanagedType.LPUTF8Str)] string path,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [Out] byte[]? value, nuint size, uint position, int options);
+
+    [DllImport("/usr/lib/libSystem.B.dylib", EntryPoint = "removexattr", SetLastError = true)]
+    private static extern int RemoveXattr([MarshalAs(UnmanagedType.LPUTF8Str)] string path,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string name, int options);
 
     [DllImport("/usr/lib/libSystem.B.dylib", EntryPoint = "setxattr", SetLastError = true)]
     private static extern int SetXattr([MarshalAs(UnmanagedType.LPUTF8Str)] string path,

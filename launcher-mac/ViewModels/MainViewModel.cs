@@ -237,6 +237,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>Hosts whose downloads count as store downloads (dustore.ru and its subdomains).</summary>
+    public static HashSet<string> TrustedStoreHosts { get; } = new(StringComparer.OrdinalIgnoreCase) { "dustore.ru" };
+    public static bool IsTrustedStorePage(string page) =>
+        Uri.TryCreate(page, UriKind.Absolute, out var url)
+        && TrustedStoreHosts.Any(host => url.Host.Equals(host, StringComparison.OrdinalIgnoreCase) || url.Host.EndsWith("." + host, StringComparison.OrdinalIgnoreCase));
+
     public void OpenDownloadInBrowser(string url) => _ = PerformAsync("Открываю загрузку в браузере…", ct => _services.OpenUrlAsync(url, ct));
 
     private async Task ImportDownloadAsync(DownloadSnapshot download)
@@ -245,6 +251,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
         while (IsBusy) await Task.Delay(300);
         await PerformAsync("Добавляю скачанную игру в библиотеку…", async ct =>
         {
+            // Like Steam: games the launcher fetched from the Dustore store open without the
+            // Gatekeeper prompt. Anything offered by another site keeps macOS's usual checks.
+            if (IsTrustedStorePage(download.SourcePage)) MacQuarantine.RemoveFromStoreDownload(download.Path);
             var entry = await _services.AddGameAsync(download.Path, ct);
             await ReloadLibraryAsync(ct, SelectedGame?.Entry.Id ?? entry.Id);
             _downloadedGameId = entry.Id;

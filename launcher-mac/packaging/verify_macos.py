@@ -169,6 +169,8 @@ def validate_ui_report(report: dict, require_input: bool) -> None:
     download = store.get("storeDownload") or {}
     if require_input and (download.get("addedToLibrary") is not True or download.get("readyToLaunch") is not True):
         raise ValueError("A store download did not land in the library ready to launch.")
+    if require_input and (download.get("downloadQuarantined") is not False or download.get("otherSiteDownloadQuarantined") is not True):
+        raise ValueError("Quarantine handling differs: store downloads must be clear, other sites must keep the marker.")
 
 
 def inspect_rendered_image(image: Path, output: Path) -> dict:

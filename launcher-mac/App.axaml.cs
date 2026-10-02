@@ -153,11 +153,13 @@ public partial class App : Application
 
     // Mirrors the store: a game page whose download link answers 302 to an S3-style
     // application/zip without Content-Disposition. The game must land in the library.
+    // 127.0.0.1 stands in for dustore.ru (trusted store); "localhost" is any other site.
     private static async Task<object> VerifyStoreDownloadAsync(MainWindow window, Controls.NativeWebView web, string gameZip)
     {
         int port = System.Net.Sockets.TcpListener.Create(0) is var probe ? StartAndStop(probe) : 0;
         using var listener = new System.Net.HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Prefixes.Add($"http://localhost:{port}/");
         listener.Start();
         _ = Task.Run(async () =>
         {
@@ -194,34 +196,50 @@ public partial class App : Application
             }
         });
 
+        ViewModels.MainViewModel.TrustedStoreHosts.Add("127.0.0.1");
         int before = window.ViewModel.Games.Count;
-        web.Navigate($"http://127.0.0.1:{port}/g/1");
+        var store = await DownloadThroughPageAsync(window, web, $"http://127.0.0.1:{port}/g/1");
+        var other = await DownloadThroughPageAsync(window, web, $"http://localhost:{port}/g/1");
+        listener.Stop();
+        if (store.downloadQuarantined || store.preparedAppQuarantined)
+            throw new InvalidOperationException("A store download kept the quarantine marker, so the game would stop at Gatekeeper.");
+        if (!other.downloadQuarantined)
+            throw new InvalidOperationException("A download from another site lost its quarantine marker.");
+        return new
+        {
+            addedToLibrary = true, readyToLaunch = true, libraryBefore = before, libraryAfter = window.ViewModel.Games.Count,
+            name = store.name, file = store.file, bytes = store.bytes, pageAfterDownload = store.page,
+            downloadQuarantined = store.downloadQuarantined, preparedAppQuarantined = store.preparedAppQuarantined,
+            otherSiteDownloadQuarantined = other.downloadQuarantined, otherSitePreparedAppQuarantined = other.preparedAppQuarantined
+        };
+    }
+
+    private static async Task<(string name, string file, long bytes, string page, bool downloadQuarantined, bool preparedAppQuarantined)>
+        DownloadThroughPageAsync(MainWindow window, Controls.NativeWebView web, string pageUrl)
+    {
+        int previous = window.ViewModel.LastDownload?.Id ?? 0;
+        web.Navigate(pageUrl);
         var started = DateTime.UtcNow;
-        while (window.ViewModel.DownloadedGameId is null && DateTime.UtcNow - started < TimeSpan.FromSeconds(90))
+        while (!(window.ViewModel.LastDownload?.Id > previous && window.ViewModel.DownloadedGameId is not null)
+               && DateTime.UtcNow - started < TimeSpan.FromSeconds(90))
         {
             await Task.Delay(500);
-            if (window.ViewModel.LastDownload is { Status: Services.DownloadStatus.Failed or Services.DownloadStatus.Cancelled } broken)
+            if (window.ViewModel.LastDownload is { Status: Services.DownloadStatus.Failed or Services.DownloadStatus.Cancelled } broken && broken.Id > previous)
                 throw new InvalidOperationException("The store download failed: " + broken.Error);
             if (window.ViewModel.HasWebError)
                 throw new InvalidOperationException("The store download page failed: " + window.ViewModel.WebErrorMessage);
         }
-        listener.Stop();
         var downloaded = window.ViewModel.LastDownload;
-        if (window.ViewModel.DownloadedGameId is not { } id || downloaded is null)
-            throw new InvalidOperationException($"The store download did not reach the library (state {downloaded?.Status}, page '{web.State.Url}').");
+        if (window.ViewModel.DownloadedGameId is not { } id || downloaded is null || downloaded.Id <= previous)
+            throw new InvalidOperationException($"The download from {pageUrl} did not reach the library (state {downloaded?.Status}, page '{web.State.Url}').");
         var entry = window.ViewModel.Games.FirstOrDefault(g => g.Entry.Id == id)?.Entry;
         if (entry is null || !entry.CanLaunchOnMac)
             throw new InvalidOperationException("The downloaded game was not prepared for launch on Mac.");
         if (web.State.Url.EndsWith(".zip", StringComparison.Ordinal))
             throw new InvalidOperationException("The view navigated to the file instead of keeping the store page.");
-        return new
-        {
-            addedToLibrary = true, readyToLaunch = true, libraryBefore = before, libraryAfter = window.ViewModel.Games.Count,
-            name = downloaded.Name, file = Path.GetFileName(downloaded.Path), bytes = new FileInfo(downloaded.Path).Length,
-            pageAfterDownload = web.State.Url,
-            downloadQuarantined = Services.MacQuarantine.Read(downloaded.Path) is not null,
-            preparedAppQuarantined = entry.PreparedMacAppPath is { } app && Services.MacQuarantine.Read(app) is not null
-        };
+        return (downloaded.Name, Path.GetFileName(downloaded.Path), new FileInfo(downloaded.Path).Length, web.State.Url,
+            Services.MacQuarantine.Read(downloaded.Path) is not null,
+            entry.PreparedMacAppPath is { } app && Services.MacQuarantine.Read(app) is not null);
     }
 
     private static int StartAndStop(System.Net.Sockets.TcpListener probe)

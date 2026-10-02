@@ -18,6 +18,7 @@ internal static unsafe partial class WebKitBridge
     private static IntPtr _download;
     private static int _downloadId;
     private static string _downloadName = "", _downloadPath = "", _downloadError = "", _pendingTitle = "";
+    private static string _pendingPage = "", _downloadPage = "";
     private static DownloadStatus _downloadStatus = DownloadStatus.None;
 
     /// <summary>Folder for finished store downloads; set by the launcher before any page loads.</summary>
@@ -44,7 +45,7 @@ internal static unsafe partial class WebKitBridge
             }
             if (_downloadStatus == DownloadStatus.Finished) fraction = 1;
             return new DownloadSnapshot(_downloadId, _downloadName, _downloadPath, double.IsFinite(fraction) ? fraction : 0,
-                received, total, _downloadStatus, _downloadError);
+                received, total, _downloadStatus, _downloadError, _downloadPage);
         }
     }
 
@@ -98,6 +99,8 @@ internal static unsafe partial class WebKitBridge
             {
                 // The store page title names the game; the S3 file name is only a build hash.
                 _pendingTitle = ManagedString(Send(webView, Sel("title"))) ?? "";
+                // The page that offered the file decides whether it counts as a store download.
+                _pendingPage = ManagedString(Send(Send(webView, Sel("URL")), Sel("absoluteString"))) ?? "";
                 if (SupportsDownloads) policy = PolicyDownload;
                 else { FallbackDownloadUrl = url; policy = PolicyCancel; }
             }
@@ -117,6 +120,7 @@ internal static unsafe partial class WebKitBridge
             _downloadId++;
             _downloadStatus = DownloadStatus.Running;
             _downloadName = _downloadPath = _downloadError = "";
+            _downloadPage = _pendingPage;
         }
         catch { }
     }
@@ -190,4 +194,4 @@ internal static unsafe partial class WebKitBridge
 
 public enum DownloadStatus { None, Running, Finished, Failed, Cancelled }
 
-public sealed record DownloadSnapshot(int Id, string Name, string Path, double Fraction, long ReceivedBytes, long TotalBytes, DownloadStatus Status, string Error);
+public sealed record DownloadSnapshot(int Id, string Name, string Path, double Fraction, long ReceivedBytes, long TotalBytes, DownloadStatus Status, string Error, string SourcePage);

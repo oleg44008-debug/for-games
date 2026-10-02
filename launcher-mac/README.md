@@ -5,7 +5,7 @@
 ## Установка
 
 1. В меню Apple → «Об этом Mac» проверьте процессор. Для Apple M1/M2/M3/M4 и следующих поколений нужен архив `osx-arm64`; для Intel — `osx-x64`.
-2. Откройте `DUSTORE-LAUNCHER-V-5.2.4-osx-arm64.dmg` или `…-osx-x64.dmg` и перетащите **DUSTORE LAUNCHER V.app** в ярлык **Applications / Программы** внутри образа.
+2. Откройте `DUSTORE-LAUNCHER-V-5.2.5-osx-arm64.dmg` или `…-osx-x64.dmg` и перетащите **DUSTORE LAUNCHER V.app** в ярлык **Applications / Программы** внутри образа.
 3. Откройте лаунчер из «Программ». DMG сохраняет macOS metadata подписи при передаче через другие ОС.
 
 Альтернативный формат — `…app.zip`: передавайте на Mac сам ZIP и распаковывайте средствами macOS. Распаковка `.app` на Windows может потерять metadata подписи.
@@ -45,7 +45,7 @@ python3 packaging/make_icon.py Assets/dustore-logo-original.png packaging/Dustor
 
 ```sh
 python3 packaging/verify_macos.py \
-  --archive artifacts/osx-arm64/DUSTORE-LAUNCHER-V-5.2.4-osx-arm64.app.zip \
+  --archive artifacts/osx-arm64/DUSTORE-LAUNCHER-V-5.2.5-osx-arm64.app.zip \
   --rid osx-arm64 --output artifacts/verification --normal-launch --ui-smoke
 ```
 
