@@ -36,6 +36,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private int _importedDownloadId;
     private Guid? _downloadedGameId;
     private string _downloadNote = "";
+    private Task<bool>? _wineInstall;
+    private string _wineStatus = "";
+    private double _wineProgress;
     private double _webProgress;
     private bool _webLoading, _webCanGoBack, _webCanGoForward;
     private bool _busy;
@@ -198,6 +201,69 @@ public sealed class MainViewModel : INotifyPropertyChanged
     };
     public string WebRetryUrl => WebError?.FailingUrl is { Length: > 0 } failed ? failed : WebStartUrl;
     public void ClearWebError() => WebError = null;
+
+    // Wine for Windows games packaged by eX: installed by the launcher itself.
+    public bool WineInstalled => WineRuntime.IsInstalled;
+    public bool WineInstalling => _wineInstall is { IsCompleted: false };
+    public bool WineCanInstall => !WineInstalled && !WineInstalling;
+    public bool WineCanRemove => WineInstalled && !WineInstalling;
+    public double WineProgress { get => _wineProgress; private set => Set(ref _wineProgress, value); }
+    public string WineStatus => _wineStatus.Length > 0 ? _wineStatus
+        : WineInstalled ? WineRuntime.DisplayVersion + " установлен. Перенесённые Windows-игры запускаются через него."
+        : "Не установлен. Лаунчер поставит его сам при первом запуске Windows-игры (" + WineRuntime.ArchiveBytes / 1048576 + " МБ).";
+    public string PlanWineNote => _plan?.Method != "wine" ? ""
+        : WineInstalled ? "Wine уже установлен лаунчером — игра запустится сразу после переноса."
+        : "Wine лаунчер поставит сам после создания пакета (" + WineRuntime.ArchiveBytes / 1048576 + " МБ, один раз).";
+    public bool HasPlanWineNote => PlanWineNote.Length > 0;
+    public ICommand InstallWineCommand => new RelayCommand(() => _ = EnsureWineAsync());
+    public ICommand RemoveWineCommand => new AsyncCommand(() => PerformAsync("Удаляю Wine…", async ct =>
+    {
+        await WineRuntime.RemoveAsync(ct);
+        _wineStatus = "";
+        NotifyWine();
+        Status = "Wine удалён. Игры и их сохранения не тронуты.";
+    }), () => !IsBusy);
+
+    /// <summary>Installs Wine once; concurrent callers share the same installation.</summary>
+    public Task<bool> EnsureWineAsync()
+    {
+        if (WineRuntime.IsInstalled) return Task.FromResult(true);
+        if (_wineInstall is { IsCompleted: false } running) return running;
+        _wineInstall = InstallWineAsync();
+        NotifyWine();
+        return _wineInstall;
+    }
+
+    private async Task<bool> InstallWineAsync()
+    {
+        var progress = new Progress<WineProgress>(p =>
+        {
+            WineProgress = p.Fraction * 100;
+            _wineStatus = p.TotalBytes > 0 && p.Fraction < 1
+                ? $"{p.Stage} {p.ReceivedBytes / 1048576} из {p.TotalBytes / 1048576} МБ · {p.Fraction * 100:0}%" : p.Stage;
+            Notify(nameof(WineStatus));
+        });
+        try
+        {
+            await Task.Yield();
+            await WineRuntime.InstallAsync(progress);
+            _wineStatus = (await WineRuntime.InstalledVersionTextAsync()) + " установлен. Перенесённые Windows-игры запускаются через него.";
+            return true;
+        }
+        catch (Exception error)
+        {
+            _wineStatus = "Wine не установлен: " + error.Message;
+            Error = _wineStatus;
+            return false;
+        }
+        finally { WineProgress = 0; NotifyWine(); }
+    }
+
+    private void NotifyWine()
+    {
+        foreach (string property in new[] { nameof(WineInstalled), nameof(WineInstalling), nameof(WineCanInstall), nameof(WineCanRemove), nameof(WineStatus), nameof(PlanWineNote), nameof(HasPlanWineNote) })
+            Notify(property);
+    }
 
     // Store downloads: progress under the in-app site, then the game joins the library.
     public bool HasDownload => _download is not null;
@@ -436,12 +502,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 var ready = await _services.PrepareConvertedMacAsync(original.Id, result, CancellationToken.None);
                 await ReloadLibraryAsync(CancellationToken.None, ready.Id);
                 Status = "macOS-пакет готов. Игра добавлена в библиотеку для запуска.";
+                if (_plan.Method == "wine" && !WineRuntime.IsInstalled) _ = EnsureWineAsync();
             }
             else Status = "Windows-пакет готов. Откройте ZIP на Windows для проверки запуска.";
         });
     }
 
-    private Task LaunchSelectedAsync() => SelectedGame is null ? Task.CompletedTask : PerformAsync("Запускаю игру…", async ct =>
+    private async Task LaunchSelectedAsync()
+    {
+        if (SelectedGame is null) return;
+        if (WineRuntime.IsWineWrapper(SelectedGame.Entry.PreparedMacAppPath) && !WineRuntime.IsInstalled)
+        {
+            Status = "Этой игре нужен Wine. Устанавливаю его — один раз…";
+            var entry = SelectedGame.Entry;
+            if (!await EnsureWineAsync()) return;
+            SelectedGame = Games.FirstOrDefault(g => g.Entry.Id == entry.Id) ?? SelectedGame;
+        }
+        await LaunchNowAsync();
+    }
+
+    private Task LaunchNowAsync() => SelectedGame is null ? Task.CompletedTask : PerformAsync("Запускаю игру…", async ct =>
     {
         var entry = SelectedGame.Entry;
         await _services.LaunchAsync(entry, ct);
@@ -530,7 +610,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void NotifyPlan()
     {
         foreach (string property in new[] { nameof(HasPlan), nameof(PlanTitle), nameof(PlanDetail), nameof(PlanFacts), nameof(PlanWarnings), nameof(HasWarnings),
-            nameof(PlanChip), nameof(PlanReady), nameof(PlanBlocked), nameof(PlanPending) })
+            nameof(PlanChip), nameof(PlanReady), nameof(PlanBlocked), nameof(PlanPending), nameof(PlanWineNote), nameof(HasPlanWineNote) })
             Notify(property);
     }
     private async Task PerformAsync(string status, Func<CancellationToken, Task> action)

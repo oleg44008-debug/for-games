@@ -1,6 +1,6 @@
 ﻿{
     "product":  "DUSTORE LAUNCHER V macOS",
-    "version":  "5.2.6",
+    "version":  "5.2.7",
     "files":  [
                   {
                       "path":  "App.axaml",
@@ -16,11 +16,11 @@
                   },
                   {
                       "path":  "DustoreLauncherV.Mac.csproj",
-                      "sha256":  "a53c3ee377c3689d8403e6f578d33eb6bbad9bc66c634e0db3642466aaa0da07"
+                      "sha256":  "091b66ac63ceb27b809905fbd498c6dbed9d7ea5fe4dba26d97b1b26f803241b"
                   },
                   {
                       "path":  "MainWindow.axaml",
-                      "sha256":  "ab0d9c8afafa393e5beccd493e7b6483ed9684acc01326c75c63e3d991349e0e"
+                      "sha256":  "b1daa3e3d602ddd3323d37cce9484b6315da04056d4f2911f8c2adb92a6f4fc9"
                   },
                   {
                       "path":  "MainWindow.axaml.cs",
@@ -32,7 +32,7 @@
                   },
                   {
                       "path":  "Program.cs",
-                      "sha256":  "9918c2f0c83bdcbe12b472aa93f2cdcaf7b5833509152fbd2e2183efaedc729f"
+                      "sha256":  "5bb1329f7112dd086d6690fce67a479c26e9b12c34ee1e57331ad9c5596d4297"
                   },
                   {
                       "path":  "README.md",
@@ -84,7 +84,7 @@
                   },
                   {
                       "path":  "packaging/verify_macos.py",
-                      "sha256":  "e3f56a2837376001b662c00de8ee4e217408097ae62bb08e69cb76f193d59748"
+                      "sha256":  "963284098e3c4498cf1ae0db877b75be68070b8af4401a0adc65e0890525b540"
                   },
                   {
                       "path":  "packaging/tests/test_packaging.py",
@@ -124,16 +124,24 @@
                   },
                   {
                       "path":  "Services/WebKitBridge.cs",
-                      "sha256":  "a14366ef4b171943359f93be749aa838509879b0c4e77b664e24733b3fec21aa"
+                      "sha256":  "914be6e01d96525fba65c32f0b9db599de7d7fa838db49d07a47e663f30ed157"
                   },
                   {
                       "path":  "Services/WebKitDownloads.cs",
                       "sha256":  "ca3542442a824ba076045b0f4c6e0ec1bb98c906e4b9ed82163a0f2ae090c7f0"
                   },
                   {
+                      "path":  "Services/WineRuntime.cs",
+                      "sha256":  "ce2fc9d37a807b3e74c0c34e897ba49dc9a66bbabada67b94b87cbf52f279c62"
+                  },
+                  {
+                      "path":  "Services/WineSmoke.cs",
+                      "sha256":  "92f4e73b0e9387d8d0bef0bf635739a5edf376785508ffc4c6e8a8df8e802c5b"
+                  },
+                  {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "7527dc19a8f8343a6dd058ffff58ff907b6480280ff2db8ef7d3080cd0419877"
+                      "sha256":  "1b93aad3aa8b098464e83a56a2077a540f0c9593cca18c21bfd291f523448144"
                   }
               ],
-    "workflowSha256":  "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"
+    "workflowSha256":  "63f05a10c2d4c2edff94a056de82944b5d8fc82531d0b92006d26cce87589531"
 }

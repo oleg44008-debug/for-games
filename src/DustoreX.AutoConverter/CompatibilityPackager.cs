@@ -51,12 +51,18 @@ public static class CompatibilityPackager
                 string shellExe = Shell(Path.GetFileName(executable.Name));
                 string workingDirectory = "\"$HERE/../Resources/game\"" + (parent.Length > 0 ? "/" + Shell(parent) : "");
                 string script = "#!/bin/bash\nset -e\nHERE=\"$(cd -- \"$(dirname -- \"$0\")\" && pwd)\"\n" +
+                    // Wine installed by DUSTORE LAUNCHER V comes first, then any Wine already on this Mac.
+                    "RUNTIME=\"$HOME/Library/Application Support/DustoreX/WineRuntime/current/bin\"\n" +
                     "if [ -n \"${DUSTOREX_WINE:-}\" ] && [ -x \"$DUSTOREX_WINE\" ]; then WINE=\"$DUSTOREX_WINE\"; " +
+                    "elif [ -x \"$RUNTIME/wine\" ]; then WINE=\"$RUNTIME/wine\"; " +
+                    "elif [ -x \"$RUNTIME/wine64\" ]; then WINE=\"$RUNTIME/wine64\"; " +
                     "elif command -v wine >/dev/null 2>&1; then WINE=\"$(command -v wine)\"; " +
                     "elif [ -x /opt/homebrew/bin/wine ]; then WINE=/opt/homebrew/bin/wine; " +
                     "elif [ -x /usr/local/bin/wine ]; then WINE=/usr/local/bin/wine; " +
                     "else /usr/bin/osascript -e 'display alert \"DustoreX: нужен Wine\" message \"Установите совместимый Wine на Mac, затем откройте игру снова. Инструкция находится в README.txt рядом с приложением.\"'; exit 1; fi\n" +
                     "export WINEPREFIX=\"$HOME/Library/Application Support/DustoreX/Wine/" + SafeId(request.GameName) + "\"\n" +
+                    // Games ship their own runtimes (Unity embeds Mono); skip Wine Mono/Gecko install prompts.
+                    "export WINEDLLOVERRIDES=\"${WINEDLLOVERRIDES:-mscoree,mshtml=}\"\nexport WINEDEBUG=\"${WINEDEBUG:--all}\"\n" +
                     "mkdir -p -- \"$WINEPREFIX\"\ncd -- " + workingDirectory + "\nexec \"$WINE\" " + shellExe + " \"$@\"\n";
                 Write(zip, root + "MacOS/launch", script, true);
                 var plist = new XDocument(new XElement("plist", new XAttribute("version", "1.0"), new XElement("dict",
@@ -66,7 +72,7 @@ public static class CompatibilityPackager
                     new XElement("key", "CFBundlePackageType"), new XElement("string", "APPL"),
                     new XElement("key", "CFBundleVersion"), new XElement("string", "1.0"))));
                 Write(zip, root + "Info.plist", plist.ToString());
-                Write(zip, "README.txt", "DustoreX — Windows игра через Wine на macOS\n\n" + string.Join("\n", warnings) + "\n\nWine: https://www.winehq.org/\nОткройте .app. Если Wine лежит в нестандартном месте, запускайте Contents/MacOS/launch из Terminal с DUSTOREX_WINE=/абсолютный/путь/wine. На Apple Silicon требуется Wine, поддерживающий x86/x64 перевод.\n");
+                Write(zip, "README.txt", "DustoreX — Windows игра через Wine на macOS\n\n" + string.Join("\n", warnings) + "\n\nWine: https://www.winehq.org/\nDUSTORE LAUNCHER V для Mac устанавливает Wine сам (Настройки → Wine).\nОткройте .app. Если Wine лежит в нестандартном месте, запускайте Contents/MacOS/launch из Terminal с DUSTOREX_WINE=/абсолютный/путь/wine. На Apple Silicon требуется Wine, поддерживающий x86/x64 перевод.\n");
                 Write(zip, "DustoreX-conversion.json", JsonSerializer.Serialize(new { method = "wine", status = "RequiresWine", testedOnTarget = false, sourceSha256 = hash, payloadSha256 = hash, warnings }, new JsonSerializerOptions { WriteIndented = true }));
             }
             MacZipMetadata.MarkUnixCreator(staging);

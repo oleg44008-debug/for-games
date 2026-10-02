@@ -14,7 +14,7 @@ jobs:
   macos-launcher:
     name: Self-contained launcher — ${{ matrix.rid }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 25
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +53,7 @@ jobs:
           --rid '${{ matrix.rid }}'
           --smoke-input ci/game/PODIEZD-macOS.zip
           --output 'launcher-artifacts/${{ matrix.rid }}/verification'
-          --normal-launch --ui-smoke
+          --normal-launch --ui-smoke --wine-smoke
       - name: Upload app ZIP, hashes and startup evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -66,6 +66,7 @@ jobs:
             launcher-artifacts/${{ matrix.rid }}/*.json
             launcher-artifacts/${{ matrix.rid }}/verification/*.json
             launcher-artifacts/${{ matrix.rid }}/verification/*.log
+            launcher-artifacts/${{ matrix.rid }}/verification/*.txt
             launcher-artifacts/${{ matrix.rid }}/verification/*.png
             launcher-artifacts/${{ matrix.rid }}/verification/*.ips
             launcher-artifacts/${{ matrix.rid }}/verification/*.crash

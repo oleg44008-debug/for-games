@@ -421,6 +421,7 @@
                 </Grid>
                 <TextBlock FontSize="19" FontWeight="SemiBold" Text="{Binding PlanTitle}" TextWrapping="Wrap" />
                 <TextBlock Classes="secondary" Text="{Binding PlanDetail}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding PlanWineNote}" IsVisible="{Binding HasPlanWineNote}" Foreground="{StaticResource Accent}" TextWrapping="Wrap" FontSize="13" />
                 <Expander Header="Проверки совместимости" IsVisible="{Binding HasWarnings}">
                   <SelectableTextBlock Text="{Binding PlanWarnings}" TextWrapping="Wrap" />
                 </Expander>
@@ -483,6 +484,18 @@
               <TextBlock Classes="secondary" Text="Официальные движки загружаются по мере необходимости и используются повторно после проверки контрольной суммы." TextWrapping="Wrap" />
               <SelectableTextBlock Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
               <Button Classes="pill" Content="Открыть кэш движков" Command="{Binding RevealCacheCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock FontSize="16" FontWeight="SemiBold" Text="Wine для Windows-игр" />
+              <TextBlock Classes="secondary" Text="Windows-игры, перенесённые через eX (в том числе на Unity), запускаются на Mac через Wine. Лаунчер скачивает Wine 11.0 со страницы сборок Gcenx на GitHub, сверяет контрольную сумму и ставит его в свою папку — без прав администратора." TextWrapping="Wrap" />
+              <TextBlock Text="{Binding WineStatus}" TextWrapping="Wrap" FontSize="13" />
+              <ProgressBar Value="{Binding WineProgress}" Maximum="100" Height="4" MinHeight="4" IsVisible="{Binding WineInstalling}" />
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Classes="primary pill" Content="Установить Wine" Command="{Binding InstallWineCommand}" IsVisible="{Binding WineCanInstall}" />
+                <Button Classes="pill" Content="Удалить Wine" Command="{Binding RemoveWineCommand}" IsVisible="{Binding WineCanRemove}" />
+              </StackPanel>
             </StackPanel>
           </Border>
           <Border Classes="card">

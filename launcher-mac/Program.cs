@@ -18,6 +18,22 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (args.Contains("--wine-smoke"))
+        {
+            // Headless Wine check for Mac CI: install, package with eX, run through the package script.
+            SmokeReportPath = Path.GetFullPath(Argument(args, "--smoke-report") ?? Path.Combine(Path.GetTempPath(), "wine-smoke.json"));
+            Directory.CreateDirectory(Path.GetDirectoryName(SmokeReportPath)!);
+            try
+            {
+                WriteReport(WineSmoke.RunAsync(Path.GetDirectoryName(SmokeReportPath)!, CancellationToken.None).GetAwaiter().GetResult());
+                return 0;
+            }
+            catch (Exception error)
+            {
+                WriteReport(new { status = "Fail", mode = "wine", error = error.ToString() });
+                return 1;
+            }
+        }
         bool serviceSmoke = args.Contains("--smoke-test");
         UiSmoke = args.Contains("--ui-smoke");
         StartupDiagnostics.Begin(serviceSmoke ? "services-smoke" : UiSmoke ? "ui-smoke" : "normal");

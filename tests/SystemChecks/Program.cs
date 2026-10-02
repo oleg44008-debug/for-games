@@ -300,6 +300,17 @@ await suite.RunAsync("Godot console wrapper, Unreal shipping binary and redistri
         new ZipItem("NightRide.exe", FixtureBox.PortableExecutable()), new ZipItem("unins000.exe", FixtureBox.PortableExecutable()));
     CheckSuite.Assert(GameExecutableFinder.Find(redist)?.Path == "NightRide.exe", "Redistributable or uninstaller was chosen.");
 });
+await suite.RunAsync("Wine wrapper prefers the launcher-installed Wine and skips Mono/Gecko prompts", box =>
+{
+    string input = box.Zip("source.zip", new ZipItem("Game.exe", FixtureBox.PortableExecutable()));
+    PackageResult result = CompatibilityPackager.Package(new PackageRequest(input, "", box.Path("runtime-wine.zip"), TargetPlatform.MacOS, "Synthetic"));
+    using var zip = ZipFile.OpenRead(result.OutputPath);
+    string script = Read(zip, "Synthetic.app/Contents/MacOS/launch");
+    int runtime = script.IndexOf("DustoreX/WineRuntime/current/bin", StringComparison.Ordinal);
+    int path = script.IndexOf("command -v wine", StringComparison.Ordinal);
+    CheckSuite.Assert(runtime > 0 && path > runtime, "Launcher-installed Wine is not searched before a system Wine.");
+    CheckSuite.Assert(script.Contains("WINEDLLOVERRIDES=\"${WINEDLLOVERRIDES:-mscoree,mshtml=}\"", StringComparison.Ordinal), "Wine Mono/Gecko install prompts are not suppressed.");
+});
 await suite.RunAsync("A build with only helper executables is refused instead of guessed", box =>
 {
     string input = box.Zip("helpers.zip", new ZipItem("UnityCrashHandler64.exe", FixtureBox.PortableExecutable()),
