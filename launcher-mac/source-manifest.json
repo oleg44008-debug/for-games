@@ -4,11 +4,15 @@
     "files":  [
                   {
                       "path":  "App.axaml",
-                      "sha256":  "91e903ed3231d025fe4900e0d8169cde015d36b89903fcb3647454bafa74955b"
+                      "sha256":  "02a433b8db7c068877f1fd5d08704383b73ed593194aac5a3e9536eecefab8d9"
                   },
                   {
                       "path":  "App.axaml.cs",
                       "sha256":  "f7180b8136c80d4538d0060879fa77d9a5545357547bbb84b82e5dab3cc3cd2d"
+                  },
+                  {
+                      "path":  "ci-status.py",
+                      "sha256":  "cde7da034bd1efb00ed93a5f8f3d60ead77264e45e5f71edcc5f84e7ba7158c5"
                   },
                   {
                       "path":  "DustoreLauncherV.Mac.csproj",
@@ -16,7 +20,7 @@
                   },
                   {
                       "path":  "MainWindow.axaml",
-                      "sha256":  "3fb158d5a02ab09aa22b8b33ac4f0b859a8ef8bd4b60374ef4d9a41d40aacb7b"
+                      "sha256":  "9aead89958f8e992a770e857b4d3a92ecfd3776a085f427214fb71d46133ae8b"
                   },
                   {
                       "path":  "MainWindow.axaml.cs",
@@ -124,7 +128,7 @@
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "c4df69ef984fb31b33bcc6a4cc0fde90463181d1931e22fca8fe616a447ed256"
+                      "sha256":  "130bccd21050aae85f3278bd6665ef4c32bff39a9f4f97d6a16b98dcacfbe350"
                   }
               ],
     "workflowSha256":  "11a60e92d75c10066e99069482c8ce50c7290a415d012ea2e5b0b2c6c67b6abc"

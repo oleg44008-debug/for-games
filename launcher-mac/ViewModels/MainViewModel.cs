@@ -18,6 +18,8 @@ namespace DustoreLauncherV.Mac.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    // The interface is Russian, so dates follow it rather than the system locale.
+    private static readonly System.Globalization.CultureInfo Russian = System.Globalization.CultureInfo.GetCultureInfo("ru-RU");
     private readonly LauncherServices _services;
     private IReadOnlyList<GameEntry> _entries = Array.Empty<GameEntry>();
     private readonly List<string> _log = new();
@@ -201,8 +203,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string SelectedTitle => SelectedGame?.Name ?? "Ваша библиотека";
     public string SelectedSource => SelectedGame?.SourcePath ?? "";
     public string SelectedStatus => SelectedGame?.Status ?? "";
-    public string SelectedAdded => SelectedGame is null ? "" : SelectedGame.Entry.AddedUtc.ToLocalTime().ToString("d MMM yyyy");
-    public string SelectedLastPlayed => SelectedGame?.Entry.LastPlayedUtc is { } when ? when.ToLocalTime().ToString("d MMM, HH:mm") : "Не запускали";
+    public string SelectedAdded => SelectedGame is null ? "" : SelectedGame.Entry.AddedUtc.ToLocalTime().ToString("d MMM yyyy", Russian);
+    public string SelectedLastPlayed => SelectedGame?.Entry.LastPlayedUtc is { } when ? when.ToLocalTime().ToString("d MMM, HH:mm", Russian) : "Не запускали";
     public string SelectedKind => SelectedGame?.KindChip ?? "";
     public Bitmap? SelectedCover => SelectedGame?.Cover;
     public bool SelectedHasCover => SelectedGame?.Cover is not null;

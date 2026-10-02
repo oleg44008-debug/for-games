@@ -162,7 +162,7 @@
             <!-- Hero: the open game. -->
             <Border Background="{StaticResource Surface}" CornerRadius="20" ClipToBounds="True" MinHeight="300" IsVisible="{Binding HasSelection}">
               <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Margin="34,32,24,30" Spacing="18" VerticalAlignment="Center">
+                <StackPanel Margin="32,30,22,28" Spacing="18" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding SelectedReady}" VerticalAlignment="Center">
                       <Ellipse Width="8" Height="8" Fill="{StaticResource Success}" />
@@ -177,14 +177,14 @@
                   <TextBlock Classes="display" FontSize="68" LineHeight="66" Text="{Binding SelectedTitle, Converter={x:Static c:Converters.Upper}}"
                              TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                   <WrapPanel Orientation="Horizontal">
-                    <Button Classes="primary pill" Command="{Binding LaunchCommand}" MinWidth="220" Height="58" CornerRadius="29" Margin="0,0,14,10"
+                    <Button Classes="primary pill" Command="{Binding LaunchCommand}" MinWidth="196" Height="58" CornerRadius="29" Margin="0,0,14,10"
                             IsVisible="{Binding SelectedReady}" ToolTip.Tip="Запустить игру">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Classes="icon fill" Data="{StaticResource IconPlay}" StrokeThickness="1.4" />
                         <TextBlock Classes="display" FontSize="24" Text="{Binding LaunchLabel}" Foreground="{StaticResource AccentInk}" VerticalAlignment="Center" Margin="0,4,0,0" />
                       </StackPanel>
                     </Button>
-                    <Button Classes="primary pill" Command="{Binding ConvertGameCommand}" MinWidth="220" Height="58" CornerRadius="29" Margin="0,0,14,10"
+                    <Button Classes="primary pill" Command="{Binding ConvertGameCommand}" MinWidth="196" Height="58" CornerRadius="29" Margin="0,0,14,10"
                             IsVisible="{Binding SelectedNeedsEx}" ToolTip.Tip="Создать macOS-пакет через eX">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Classes="icon" Data="{StaticResource IconEx}" StrokeThickness="2.2" />
@@ -214,10 +214,10 @@
                   </Grid>
                 </StackPanel>
                 <!-- Cover: the app's own icon, or a flat monogram plate. -->
-                <Border Grid.Column="1" Width="300" Background="{StaticResource BackgroundSoft}">
+                <Border Grid.Column="1" Width="250" Background="{StaticResource BackgroundSoft}">
                   <Grid>
-                    <Image Source="{Binding SelectedCover}" IsVisible="{Binding SelectedHasCover}" Width="210" Height="210" Stretch="Uniform" />
-                    <Border IsVisible="{Binding SelectedNoCover}" Width="190" Height="190" CornerRadius="36" Background="{StaticResource AccentSubtle}">
+                    <Image Source="{Binding SelectedCover}" IsVisible="{Binding SelectedHasCover}" Width="180" Height="180" Stretch="Uniform" />
+                    <Border IsVisible="{Binding SelectedNoCover}" Width="170" Height="170" CornerRadius="34" Background="{StaticResource AccentSubtle}">
                       <TextBlock Classes="display" FontSize="120" Text="{Binding SelectedMonogram}" Foreground="{StaticResource Orchid}"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,18,0,0" />
                     </Border>
@@ -259,11 +259,8 @@
                   </Button>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
-                  <Button Classes="pill" Click="AddGameFolder_Click" IsEnabled="{Binding NotBusy}" ToolTip.Tip="Добавить приложение .app или папку игры">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Path Classes="icon" Data="{StaticResource IconFolder}" />
-                      <TextBlock Text=".app / папка" VerticalAlignment="Center" />
-                    </StackPanel>
+                  <Button Classes="round small" Width="42" Height="42" CornerRadius="21" Background="{StaticResource Surface}" Click="AddGameFolder_Click" IsEnabled="{Binding NotBusy}" ToolTip.Tip="Добавить приложение .app или папку игры">
+                    <Path Classes="icon" Data="{StaticResource IconFolder}" />
                   </Button>
                   <Button Classes="outline" Click="AddGameFile_Click" IsEnabled="{Binding NotBusy}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
