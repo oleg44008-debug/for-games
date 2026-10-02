@@ -88,6 +88,9 @@ internal static unsafe partial class WebKitBridge
 
     public static void Navigate(IntPtr webView, string url)
     {
+        // A new navigation supersedes the last failure at once; otherwise the next poll
+        // would restore an error the user just dismissed before WebKit reports the start.
+        LastError = null;
         IntPtr nsUrl = Send(Class("NSURL"), Sel("URLWithString:"), NSString(url));
         if (nsUrl == IntPtr.Zero) return;
         SendVoid(webView, Sel("loadRequest:"), Send(Class("NSURLRequest"), Sel("requestWithURL:"), nsUrl));

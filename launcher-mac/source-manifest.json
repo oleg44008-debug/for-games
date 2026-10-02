@@ -124,7 +124,7 @@
                   },
                   {
                       "path":  "Services/WebKitBridge.cs",
-                      "sha256":  "375e17405f248edffa9acd643f1b61b99908bbfbc1a07a8493728b382eb9539b"
+                      "sha256":  "c2504924e5f5969551d5d0bd2c63157cac677e5892572cfff689fcb168391c4c"
                   },
                   {
                       "path":  "Services/WebKitDownloads.cs",
