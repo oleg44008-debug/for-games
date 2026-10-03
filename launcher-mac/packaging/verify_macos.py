@@ -279,6 +279,8 @@ def main() -> int:
     parser.add_argument("--smoke-input", type=Path)
     parser.add_argument("--ui-smoke", action="store_true")
     parser.add_argument("--wine-smoke", action="store_true", help="Install Wine through the launcher and run an eX Wine package with it.")
+    parser.add_argument("--wine-smoke-optional", action="store_true",
+                        help="Run the Wine smoke and record it without failing (GitHub Intel VMs have no GPU for Wine's window driver).")
     parser.add_argument("--normal-launch", action="store_true", help="Require real LaunchServices open with default arguments/profile and a persistent native window.")
     parser.add_argument("--installer", type=Path, help="Also require DMG read-only mount, signed-metadata-preserving installation, and normal launch.")
     args = parser.parse_args()
@@ -367,14 +369,21 @@ def main() -> int:
             if sha256(args.smoke_input.resolve()) != source_hash:
                 raise ValueError("The verification changed the supplied game archive.")
             record["sourceGamePreserved"] = {"sha256": source_hash, "path": str(args.smoke_input.resolve())}
-        if args.wine_smoke:
+        if args.wine_smoke or args.wine_smoke_optional:
             wine_report = output / "wine-smoke.json"
-            record["wineSmoke"] = run_owned_process([str(executable), "--wine-smoke", "--smoke-report", str(wine_report)],
-                                                    working, env, output / "wine-smoke.log", 1500)
-            record["wineSmoke"]["checks"] = json.loads(wine_report.read_text(encoding="utf-8"))
-            checks = record["wineSmoke"]["checks"]
-            if checks.get("status") != "Pass" or checks.get("tokenSeen") is not True or checks.get("decoySkipped") is not True:
-                raise ValueError("The launcher-installed Wine did not run the eX package.")
+            try:
+                record["wineSmoke"] = run_owned_process([str(executable), "--wine-smoke", "--smoke-report", str(wine_report)],
+                                                        working, env, output / "wine-smoke.log", 1500)
+                record["wineSmoke"]["checks"] = json.loads(wine_report.read_text(encoding="utf-8"))
+                checks = record["wineSmoke"]["checks"]
+                if checks.get("status") != "Pass" or checks.get("tokenSeen") is not True or checks.get("decoySkipped") is not True:
+                    raise ValueError("The launcher-installed Wine did not run the eX package.")
+                record["wineSmoke"]["required"] = bool(args.wine_smoke)
+            except Exception as exception:
+                if args.wine_smoke:
+                    raise
+                record["wineSmoke"] = {"required": False, "passed": False, "error": str(exception),
+                                       "checks": json.loads(wine_report.read_text(encoding="utf-8")) if wine_report.is_file() else None}
         record["headlessProfile"] = record["headlessStartup"]["checks"]["report"]["ProfileDirectory"]
         record["status"] = "passed"
     except Exception as exception:

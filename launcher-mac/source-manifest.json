@@ -84,7 +84,7 @@
                   },
                   {
                       "path":  "packaging/verify_macos.py",
-                      "sha256":  "963284098e3c4498cf1ae0db877b75be68070b8af4401a0adc65e0890525b540"
+                      "sha256":  "542f6f94087c9f224e5fc811593f5ea1e8939bcf125119aa83f504ef8a0822ba"
                   },
                   {
                       "path":  "packaging/tests/test_packaging.py",
@@ -143,5 +143,5 @@
                       "sha256":  "1b93aad3aa8b098464e83a56a2077a540f0c9593cca18c21bfd291f523448144"
                   }
               ],
-    "workflowSha256":  "63f05a10c2d4c2edff94a056de82944b5d8fc82531d0b92006d26cce87589531"
+    "workflowSha256":  "bca74a7c431194de14667fc4fb70b3f9758f2a249c0bf08f15a44fd0681ea718"
 }

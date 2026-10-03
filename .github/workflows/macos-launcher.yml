@@ -21,8 +21,12 @@ jobs:
         include:
           - runner: macos-latest
             rid: osx-arm64
+            wine: --wine-smoke
+          # GitHub's Intel macOS VMs have no GPU, so Wine's first start never settles there;
+          # the Intel Wine path is verified on a real Intel Mac and only recorded here.
           - runner: macos-15-intel
             rid: osx-x64
+            wine: --wine-smoke-optional
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
@@ -53,7 +57,7 @@ jobs:
           --rid '${{ matrix.rid }}'
           --smoke-input ci/game/PODIEZD-macOS.zip
           --output 'launcher-artifacts/${{ matrix.rid }}/verification'
-          --normal-launch --ui-smoke --wine-smoke
+          --normal-launch --ui-smoke ${{ matrix.wine }}
       - name: Upload app ZIP, hashes and startup evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
