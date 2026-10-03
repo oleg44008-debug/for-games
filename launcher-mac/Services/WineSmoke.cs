@@ -21,6 +21,8 @@ internal static class WineSmoke
         install.Stop();
         var (versionCode, versionText) = await WineRuntime.RunAsync(wine, new[] { "--version" }, null, TimeSpan.FromMinutes(2), cancellation);
         if (versionCode != 0) throw new InvalidOperationException("wine --version failed: " + versionText);
+        var dxvk = WineRuntime.InstalledDxvkLibraries();
+        if (!dxvk.Contains("x86_64-windows/d3d11.dll")) throw new InvalidOperationException("DXVK d3d11.dll was not installed into Wine: " + string.Join(", ", dxvk));
 
         string wineHome = Path.GetDirectoryName(Path.GetDirectoryName(wine)!)!;
         string cmd = Directory.EnumerateFiles(wineHome, "cmd.exe", SearchOption.AllDirectories)
@@ -61,7 +63,7 @@ internal static class WineSmoke
         return new
         {
             status = "Pass", wineInstalledByLauncher = !wasInstalled, wineVersion = versionText.Trim(), wineArchive = WineRuntime.ArchiveName,
-            wineSha256 = WineRuntime.Sha256, installSeconds = Math.Round(install.Elapsed.TotalSeconds, 1), chosenExecutable = "WineSmoke.exe",
+            wineSha256 = WineRuntime.Sha256, dxvkVersion = WineRuntime.DxvkVersion, dxvkLibraries = dxvk, installSeconds = Math.Round(install.Elapsed.TotalSeconds, 1), chosenExecutable = "WineSmoke.exe",
             decoySkipped = true, packagedRunExitCode = code, tokenSeen = token, runSeconds = Math.Round(run.Elapsed.TotalSeconds, 1),
             totalSeconds = Math.Round(total.Elapsed.TotalSeconds, 1), appleSilicon = WineRuntime.IsAppleSilicon
         };

@@ -1,10 +1,10 @@
 ﻿{
     "product":  "DUSTORE LAUNCHER V macOS",
-    "version":  "5.2.7",
+    "version":  "5.2.8",
     "files":  [
                   {
                       "path":  "App.axaml",
-                      "sha256":  "398abb5f382276b645eb18b5f42217554d47741970689774cd531a898c9a39a8"
+                      "sha256":  "f070d55167558bb27442e8a0a405df59d9b414a817d2800c73851fc299eeade0"
                   },
                   {
                       "path":  "App.axaml.cs",
@@ -16,15 +16,15 @@
                   },
                   {
                       "path":  "DustoreLauncherV.Mac.csproj",
-                      "sha256":  "091b66ac63ceb27b809905fbd498c6dbed9d7ea5fe4dba26d97b1b26f803241b"
+                      "sha256":  "867b9d3e451e5f2b0218bd45dcf5a43105cf213dc9c9faa30270a36897969805"
                   },
                   {
                       "path":  "MainWindow.axaml",
-                      "sha256":  "b1daa3e3d602ddd3323d37cce9484b6315da04056d4f2911f8c2adb92a6f4fc9"
+                      "sha256":  "5a421832451839b8ba3163c2ba3878bb364296bb3f0ac9ac00d469971425108a"
                   },
                   {
                       "path":  "MainWindow.axaml.cs",
-                      "sha256":  "530707bc41740fd618e135b87fd92737f04569e4824e0f72d1217aa68e045cd5"
+                      "sha256":  "cc1cd73cda03a248595f640f1e17fe49a6c1fb285ed38366b7c16490fc4a807f"
                   },
                   {
                       "path":  "prepare-ci.ps1",
@@ -132,15 +132,15 @@
                   },
                   {
                       "path":  "Services/WineRuntime.cs",
-                      "sha256":  "c5f4aad6a0983e8a2a84e12169f796c9efb01cfd076079ea6512a4f91b78ffaa"
+                      "sha256":  "95827e959cb686a09bbc925c02a86709870a3032bacd3400a4e8cc9292dd45b3"
                   },
                   {
                       "path":  "Services/WineSmoke.cs",
-                      "sha256":  "d4980ad6a55392c2657b4bc19379b2a0edd9678cef80b67593bac75bc2802e04"
+                      "sha256":  "14c3add38785fb1af2548433c9cf781ae3e93c6f2f6c19c8444f7d2258ba6f3f"
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "1b93aad3aa8b098464e83a56a2077a540f0c9593cca18c21bfd291f523448144"
+                      "sha256":  "b90f0065c672f8c48a1d0df94b1d25f05054b7a6dfae124a94af85179a49ebd0"
                   }
               ],
     "workflowSha256":  "bca74a7c431194de14667fc4fb70b3f9758f2a249c0bf08f15a44fd0681ea718"

@@ -37,6 +37,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private Guid? _downloadedGameId;
     private string _downloadNote = "";
     private Task<bool>? _wineInstall;
+    private Guid? _launchingId;
+    private bool _launchIsWine;
     private string _wineStatus = "";
     private double _wineProgress;
     private double _webProgress;
@@ -125,14 +127,22 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool NoSelection => !HasSelection;
     public bool CanAnalyze => !IsBusy && !string.IsNullOrWhiteSpace(SourcePath);
     public bool CanConvert => !IsBusy && _plan?.CanConvert == true && !string.IsNullOrWhiteSpace(OutputPath) && !string.IsNullOrWhiteSpace(GameName);
-    public bool CanLaunch => !IsBusy && SelectedGame?.CanLaunch == true;
+    public bool CanLaunch => !IsBusy && SelectedGame?.CanLaunch == true && !SelectedLaunching;
+    // A first start takes a while (macOS checks a new app; Wine prepares its prefix). The Play
+    // button says so instead of looking idle, which read as "only the second click works".
+    public bool SelectedLaunching => SelectedGame is not null && _launchingId == SelectedGame.Entry.Id;
+    public string PlayLabel => SelectedLaunching ? "Запуск…" : "Играть";
+    public string LaunchNote => !SelectedLaunching ? ""
+        : _launchIsWine ? "Windows-игра запускается через Wine. Первый запуск готовит окружение — до пары минут."
+        : "macOS открывает игру. Первый запуск новой игры занимает несколько секунд.";
+    public bool HasLaunchNote => LaunchNote.Length > 0;
     public string LibraryCount => _entries.Count + " " + Plural(_entries.Count, "игра", "игры", "игр");
     public string FilterCount => Games.Count == 0 ? (_entries.Count == 0 ? "Библиотека пока пуста" : "Ничего не найдено") : $"Показано: {Games.Count}";
     public string DataDirectory => _services.DataDirectory;
     public string CacheDirectory => RuntimeCatalog.CacheDirectory;
     public string PlatformLabel => "macOS · " + (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "Apple Silicon" : "Intel / x64");
     public static string AppVersion => typeof(MainViewModel).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "";
-    public string RailVersion => "LAUNCHER " + AppVersion + " · MAC";
+    public string RailVersion => "Launcher " + AppVersion + " для Mac";
 
     // Sections. Web sections share one in-app WKWebView.
     public string Section
@@ -209,7 +219,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool WineCanRemove => WineInstalled && !WineInstalling;
     public double WineProgress { get => _wineProgress; private set => Set(ref _wineProgress, value); }
     public string WineStatus => _wineStatus.Length > 0 ? _wineStatus
-        : WineInstalled ? WineRuntime.DisplayVersion + " установлен. Перенесённые Windows-игры запускаются через него."
+        : WineInstalled ? WineRuntime.DisplayVersion + " и DXVK установлены. Перенесённые Windows-игры запускаются через них."
         : "Не установлен. Лаунчер поставит его сам при первом запуске Windows-игры (" + WineRuntime.ArchiveBytes / 1048576 + " МБ).";
     public string PlanWineNote => _plan?.Method != "wine" ? ""
         : WineInstalled ? "Wine уже установлен лаунчером — игра запустится сразу после переноса."
@@ -247,7 +257,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             await Task.Yield();
             await WineRuntime.InstallAsync(progress);
-            _wineStatus = (await WineRuntime.InstalledVersionTextAsync()) + " установлен. Перенесённые Windows-игры запускаются через него.";
+            _wineStatus = (await WineRuntime.InstalledVersionTextAsync()) + " и DXVK установлены. Перенесённые Windows-игры запускаются через них.";
             return true;
         }
         catch (Exception error)
@@ -378,7 +388,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool SelectedNeedsEx => SelectedGame is not null && !SelectedGame.CanLaunch;
     public string SelectedStateLabel => SelectedGame is null ? "" : SelectedGame.CanLaunch ? "ГОТОВО К ЗАПУСКУ"
         : !SelectedGame.Entry.SourceExists ? "ФАЙЛ НЕ НАЙДЕН" : "НУЖЕН ПЕРЕНОС ЧЕРЕЗ eX";
-    public string LaunchLabel => "ИГРАТЬ";
     public string LaunchHint => SelectedGame is null ? "" : SelectedGame.CanLaunch ? "Приложение откроется обычным способом macOS."
         : "Для Windows-сборки сначала создайте macOS-пакет через eX. Для неизвестного формата нужен готовый Mac-порт.";
 
@@ -521,13 +530,34 @@ public sealed class MainViewModel : INotifyPropertyChanged
         await LaunchNowAsync();
     }
 
-    private Task LaunchNowAsync() => SelectedGame is null ? Task.CompletedTask : PerformAsync("Запускаю игру…", async ct =>
+    private async Task LaunchNowAsync()
     {
+        if (SelectedGame is null) return;
         var entry = SelectedGame.Entry;
-        await _services.LaunchAsync(entry, ct);
-        await ReloadLibraryAsync(ct, entry.Id);
-        Status = "Игра передана macOS для запуска.";
-    });
+        bool launched = false;
+        await PerformAsync("Запускаю игру…", async ct =>
+        {
+            await _services.LaunchAsync(entry, ct);
+            launched = true;
+            await ReloadLibraryAsync(ct, entry.Id);
+            Status = "Игра передана macOS для запуска.";
+        });
+        if (!launched) return;
+        // macOS only brings an already running app forward on a repeated open, so this is feedback, not a lock.
+        _launchingId = entry.Id;
+        _launchIsWine = WineRuntime.IsWineWrapper(entry.PreparedMacAppPath);
+        NotifyLaunch();
+        await Task.Delay(TimeSpan.FromSeconds(_launchIsWine ? 45 : 6));
+        if (_launchingId == entry.Id) _launchingId = null;
+        NotifyLaunch();
+    }
+
+    private void NotifyLaunch()
+    {
+        foreach (string property in new[] { nameof(SelectedLaunching), nameof(PlayLabel), nameof(LaunchNote), nameof(HasLaunchNote), nameof(CanLaunch) })
+            Notify(property);
+        if (LaunchCommand is ICommandNotifications notifications) notifications.RaiseCanExecuteChanged();
+    }
 
     private Task RemoveSelectedAsync() => SelectedGame is null ? Task.CompletedTask : PerformAsync("Удаляю запись из библиотеки…", async ct =>
     {
@@ -590,7 +620,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         foreach (string property in new[] { nameof(HasSelection), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus),
             nameof(SelectedAdded), nameof(SelectedLastPlayed), nameof(LaunchHint), nameof(SelectedCover), nameof(SelectedHasCover), nameof(SelectedNoCover),
-            nameof(SelectedMonogram), nameof(SelectedKind), nameof(SelectedReady), nameof(SelectedNeedsEx), nameof(SelectedStateLabel) })
+            nameof(SelectedMonogram), nameof(SelectedKind), nameof(SelectedReady), nameof(SelectedNeedsEx), nameof(SelectedStateLabel),
+            nameof(SelectedLaunching), nameof(PlayLabel), nameof(LaunchNote), nameof(HasLaunchNote) })
             Notify(property);
     }
 
@@ -672,8 +703,8 @@ public sealed class GameItemViewModel : INotifyPropertyChanged
     public string SourcePath => Entry.SourcePath;
     public bool CanLaunch => Entry.CanLaunchOnMac;
     public string Status => CanLaunch ? "Готова к запуску на Mac" : !Entry.SourceExists ? "Исходный файл не найден" : Entry.Kind + " · перенос через eX";
-    public string ShortStatus => CanLaunch ? "ГОТОВА" : !Entry.SourceExists ? "НЕ НАЙДЕНА" : "НУЖЕН eX";
-    public string KindChip => CanLaunch ? "MACOS" : Entry.Kind.ToUpperInvariant();
+    public string ShortStatus => CanLaunch ? "Готова" : !Entry.SourceExists ? "Не найдена" : "Нужен eX";
+    public string KindChip => CanLaunch ? "macOS" : Entry.Kind;
     public string Monogram => string.IsNullOrWhiteSpace(Name) ? "D" : Name[..1].ToUpperInvariant();
     public bool IsSelected { get => _selected; set { if (_selected == value) return; _selected = value; Raise(nameof(IsSelected)); } }
     public Bitmap? Cover { get => _cover; set { if (ReferenceEquals(_cover, value)) return; _cover = value; Raise(nameof(Cover)); Raise(nameof(HasCover)); Raise(nameof(NoCover)); } }

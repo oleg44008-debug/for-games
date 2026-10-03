@@ -9,7 +9,7 @@
     <Product>DUSTORE LAUNCHER V</Product>
     <AssemblyTitle>DUSTORE LAUNCHER V for macOS</AssemblyTitle>
     <Company>eXepc</Company>
-    <Version>5.2.7</Version>
+    <Version>5.2.8</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseAppHost>true</UseAppHost>
     <PublishSingleFile>false</PublishSingleFile>

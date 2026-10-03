@@ -22,6 +22,15 @@ public static class WineRuntime
     public const string Url = "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.0_1/wine-stable-11.0_1-osx64.tar.xz";
     public const string Sha256 = "b50dc50ec7f41d58b115a6b685d4d1315ba3c797bd3aa0f49213f2703cb82388";
     public const long ArchiveBytes = 185303032;
+
+    // Unity and other Direct3D 11 games: Wine's own d3d11 draws through OpenGL, which macOS caps at 4.1,
+    // and Unity refuses it ("Failed to initialize graphics"). DXVK-macOS (Gcenx, zlib licence) draws
+    // Direct3D 10/11 through Vulkan, which Wine's bundled MoltenVK maps to Metal.
+    public const string DxvkVersion = "1.10.3-20230507-repack";
+    public const string DxvkUrl = "https://github.com/Gcenx/DXVK-macOS/releases/download/v1.10.3-20230507-repack/dxvk-macOS-async-v1.10.3-20230507-repack-builtin.tar.gz";
+    public const string DxvkSha256 = "810b1e5caf8ce975b784fae866a130ad23fa0ea233b0e5609cbc4a45f3ef6f00";
+    public const long DxvkBytes = 2785833;
+    private static readonly string[] DxvkLibraries = { "d3d11.dll", "dxgi.dll", "d3d10core.dll", "d3d10.dll", "d3d10_1.dll" };
     private static readonly SemaphoreSlim Gate = new(1, 1);
 
     /// <summary>Shared with the eX wrapper script: $HOME/Library/Application Support/DustoreX/WineRuntime.</summary>
@@ -30,6 +39,7 @@ public static class WineRuntime
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "DustoreX", "WineRuntime");
     public static string CurrentLink => Path.Combine(Root, "current");
     private static string Marker => Path.Combine(Root, "installed.json");
+    private static string DxvkMarker => Path.Combine(Root, "dxvk.json");
 
     public static string? WineBinary
     {
@@ -44,7 +54,9 @@ public static class WineRuntime
         }
     }
 
-    public static bool IsInstalled => WineBinary is not null && File.Exists(Marker);
+    public static bool IsWineInstalled => WineBinary is not null && File.Exists(Marker);
+    public static bool IsDxvkInstalled => File.Exists(DxvkMarker);
+    public static bool IsInstalled => IsWineInstalled && IsDxvkInstalled;
     public static bool IsAppleSilicon => RuntimeInformation.OSArchitecture == Architecture.Arm64;
 
     /// <summary>Wine for macOS is x86_64; Apple Silicon runs it through Rosetta 2.</summary>
@@ -62,6 +74,17 @@ public static class WineRuntime
         try
         {
             if (IsInstalled) return WineBinary!;
+            if (!IsWineInstalled) await InstallWineAsync(progress, cancellation);
+            // Existing Wine installs from 5.2.7 receive DXVK on their own.
+            if (!IsDxvkInstalled) await InstallDxvkAsync(progress, cancellation);
+            return WineBinary!;
+        }
+        finally { Gate.Release(); }
+    }
+
+    private static async Task InstallWineAsync(IProgress<WineProgress>? progress, CancellationToken cancellation)
+    {
+        {
             if (!await RosettaReadyAsync(cancellation))
                 throw new InvalidOperationException("Wine для Mac работает через Rosetta 2, а она не установлена. Откройте Терминал и выполните: softwareupdate --install-rosetta — затем повторите.");
             Directory.CreateDirectory(Root);
@@ -69,7 +92,7 @@ public static class WineRuntime
             string staging = Path.Combine(Root, "staging-" + Guid.NewGuid().ToString("N"));
             try
             {
-                await DownloadAsync(archive, progress, cancellation);
+                await DownloadAsync(Url, ArchiveBytes, archive, "Скачиваю " + DisplayVersion + "…", progress, cancellation);
                 progress?.Report(new WineProgress("Проверяю контрольную сумму…", 1, ArchiveBytes, ArchiveBytes));
                 string actual;
                 await using (var file = File.OpenRead(archive)) actual = Convert.ToHexString(await SHA256.HashDataAsync(file, cancellation)).ToLowerInvariant();
@@ -102,7 +125,6 @@ public static class WineRuntime
                 {
                     version = Version, wine = versionText.Trim(), url = Url, sha256 = Sha256, installedAtUtc = DateTimeOffset.UtcNow
                 }), cancellation);
-                return WineBinary!;
             }
             finally
             {
@@ -110,7 +132,65 @@ public static class WineRuntime
                 try { if (Directory.Exists(staging)) Directory.Delete(staging, true); } catch (IOException) { }
             }
         }
-        finally { Gate.Release(); }
+    }
+
+    /// <summary>Puts DXVK's builtin d3d11/dxgi/d3d10 libraries in place of Wine's OpenGL-based ones.</summary>
+    private static async Task InstallDxvkAsync(IProgress<WineProgress>? progress, CancellationToken cancellation)
+    {
+        string wineHome = new DirectoryInfo(CurrentLink).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? CurrentLink;
+        string archive = Path.Combine(Root, "dxvk.tar.gz.partial");
+        string staging = Path.Combine(Root, "dxvk-staging-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            await DownloadAsync(DxvkUrl, DxvkBytes, archive, "Скачиваю DXVK (графика Direct3D 11)…", progress, cancellation);
+            string actual;
+            await using (var file = File.OpenRead(archive)) actual = Convert.ToHexString(await SHA256.HashDataAsync(file, cancellation)).ToLowerInvariant();
+            if (actual != DxvkSha256) throw new InvalidDataException("Скачанный DXVK не совпал с опубликованной контрольной суммой. Ничего не установлено.");
+            Directory.CreateDirectory(staging);
+            var (code, output) = await RunAsync("/usr/bin/tar", new[] { "-xzf", archive, "-C", staging }, null, TimeSpan.FromMinutes(5), cancellation);
+            if (code != 0) throw new IOException("Не удалось распаковать DXVK: " + output.Trim());
+
+            progress?.Report(new WineProgress("Подключаю DXVK к Wine…", 1, DxvkBytes, DxvkBytes));
+            var installed = new List<string>();
+            foreach (var (arch, wineDir) in new[] { ("x64", "x86_64-windows"), ("x32", "i386-windows") })
+            {
+                string target = Path.Combine(wineHome, "lib", "wine", wineDir);
+                if (!Directory.Exists(target)) continue;
+                foreach (string library in DxvkLibraries)
+                {
+                    // Archives name the folders x64/x32 or x86_64-windows/i386-windows; accept either.
+                    string? source = Directory.EnumerateFiles(staging, library, SearchOption.AllDirectories)
+                        .FirstOrDefault(f => f.Split('/').Any(part => part == arch || part == wineDir));
+                    if (source is null) continue;
+                    string destination = Path.Combine(target, library);
+                    string original = destination + ".wined3d";
+                    if (File.Exists(destination) && !File.Exists(original)) File.Copy(destination, original);
+                    File.Copy(source, destination, overwrite: true);
+                    installed.Add(wineDir + "/" + library);
+                }
+            }
+            if (!installed.Any(i => i == "x86_64-windows/d3d11.dll"))
+                throw new InvalidDataException("В архиве DXVK не найден 64-битный d3d11.dll.");
+            await File.WriteAllTextAsync(DxvkMarker, JsonSerializer.Serialize(new
+            {
+                version = DxvkVersion, url = DxvkUrl, sha256 = DxvkSha256, libraries = installed, installedAtUtc = DateTimeOffset.UtcNow
+            }), cancellation);
+        }
+        finally
+        {
+            try { File.Delete(archive); } catch (IOException) { }
+            try { if (Directory.Exists(staging)) Directory.Delete(staging, true); } catch (IOException) { }
+        }
+    }
+
+    public static IReadOnlyList<string> InstalledDxvkLibraries()
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(DxvkMarker));
+            return doc.RootElement.GetProperty("libraries").EnumerateArray().Select(e => e.GetString() ?? "").ToArray();
+        }
+        catch (Exception) { return Array.Empty<string>(); }
     }
 
     public static async Task RemoveAsync(CancellationToken cancellation = default)
@@ -120,6 +200,7 @@ public static class WineRuntime
         {
             if (new FileInfo(CurrentLink).LinkTarget is not null || File.Exists(CurrentLink)) File.Delete(CurrentLink);
             File.Delete(Marker);
+            File.Delete(DxvkMarker);
             foreach (string dir in Directory.Exists(Root) ? Directory.GetDirectories(Root, "wine-stable-*") : Array.Empty<string>())
                 Directory.Delete(dir, recursive: true);
         }
@@ -132,14 +213,14 @@ public static class WineRuntime
         catch (Exception) { return DisplayVersion; }
     }
 
-    private static async Task DownloadAsync(string path, IProgress<WineProgress>? progress, CancellationToken cancellation)
+    private static async Task DownloadAsync(string url, long expectedBytes, string path, string stage, IProgress<WineProgress>? progress, CancellationToken cancellation)
     {
         using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("DustoreLauncherV/5.2.7");
-        using var response = await http.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead, cancellation);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("DustoreLauncherV/5.2.8");
+        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellation);
         response.EnsureSuccessStatusCode();
-        long total = response.Content.Headers.ContentLength ?? ArchiveBytes;
-        if (total != ArchiveBytes) throw new InvalidDataException("Размер архива Wine не совпадает с опубликованным.");
+        long total = response.Content.Headers.ContentLength ?? expectedBytes;
+        if (total != expectedBytes) throw new InvalidDataException("Размер архива не совпадает с опубликованным: " + Path.GetFileName(new Uri(url).LocalPath));
         await using var input = await response.Content.ReadAsStreamAsync(cancellation);
         await using var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, useAsync: true);
         byte[] buffer = new byte[1 << 20];
@@ -148,10 +229,10 @@ public static class WineRuntime
         {
             await output.WriteAsync(buffer.AsMemory(0, read), cancellation);
             received += read;
-            if (received > ArchiveBytes) throw new InvalidDataException("Архив Wine больше опубликованного размера.");
-            if (lastReport.ElapsedMilliseconds > 250) { progress?.Report(new WineProgress("Скачиваю " + DisplayVersion + "…", (double)received / total, received, total)); lastReport.Restart(); }
+            if (received > expectedBytes) throw new InvalidDataException("Архив больше опубликованного размера.");
+            if (lastReport.ElapsedMilliseconds > 250) { progress?.Report(new WineProgress(stage, (double)received / total, received, total)); lastReport.Restart(); }
         }
-        if (received != ArchiveBytes) throw new InvalidDataException("Архив Wine скачан не полностью.");
+        if (received != expectedBytes) throw new InvalidDataException("Архив скачан не полностью.");
     }
 
     internal static async Task<(int Code, string Output)> RunAsync(string tool, IEnumerable<string> arguments, IDictionary<string, string>? environment,

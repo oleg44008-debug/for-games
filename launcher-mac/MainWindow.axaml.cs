@@ -33,6 +33,15 @@ public partial class MainWindow : Window
             ExtendClientAreaToDecorationsHint = true;
             ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.PreferSystemChrome;
             ExtendClientAreaTitleBarHeightHint = 34;
+            // Sidebar material like Finder: blurred desktop behind a translucent tint when macOS grants it.
+            TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.None };
+            Opened += (_, _) =>
+            {
+                if (ActualTransparencyLevel != WindowTransparencyLevel.AcrylicBlur && ActualTransparencyLevel != WindowTransparencyLevel.Blur) return;
+                Background = Avalonia.Media.Brushes.Transparent;
+                if (this.FindControl<Border>("Sidebar") is { } sidebar && Application.Current?.FindResource("NavTranslucent") is Avalonia.Media.IBrush tint)
+                    sidebar.Background = tint;
+            };
         }
         if (NativeWebView.IsSupported && this.FindControl<Panel>("SiteHost") is { } siteHost)
         {
