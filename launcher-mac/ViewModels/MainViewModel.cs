@@ -136,6 +136,70 @@ public sealed class MainViewModel : INotifyPropertyChanged
         : _launchIsWine ? "Windows-игра запускается через Wine. Первый запуск готовит окружение — до пары минут."
         : "macOS открывает игру. Первый запуск новой игры занимает несколько секунд.";
     public bool HasLaunchNote => LaunchNote.Length > 0;
+
+    // Window settings per game: Unity and Godot read them from the command line.
+    public IReadOnlyList<WindowChoice> WindowModes => AllWindowModes;
+    private static readonly IReadOnlyList<WindowChoice> AllWindowModes = new[]
+    {
+        new WindowChoice("В окне", GameLaunchOptions.Windowed), new WindowChoice("Весь экран", GameLaunchOptions.Fullscreen),
+        new WindowChoice("Как в игре", GameLaunchOptions.GameDefault)
+    };
+    public IReadOnlyList<ResolutionChoice> Resolutions => AllResolutions;
+    private static readonly IReadOnlyList<ResolutionChoice> AllResolutions = new[]
+    {
+        new ResolutionChoice(1024, 576), new ResolutionChoice(1280, 720), new ResolutionChoice(1440, 810), new ResolutionChoice(1600, 900), new ResolutionChoice(1920, 1080)
+    };
+    public bool SelectedHasWindowOptions => SelectedGame is not null && SelectedGame.CanLaunch
+        && GameLaunchOptions.DetectEngine(SelectedGame.Entry.PreparedMacAppPath ?? SelectedGame.Entry.SourcePath) != GameEngineKind.Other;
+    public bool SelectedCanStop => SelectedGame?.CanLaunch == true;
+    public WindowChoice? SelectedWindowMode
+    {
+        get => SelectedGame is null ? null : AllWindowModes.FirstOrDefault(m => m.Key == (SelectedGame.Entry.WindowMode ?? GameLaunchOptions.Windowed));
+        set { if (value is not null) _ = SaveWindowOptionsAsync(value.Key, SelectedResolution); }
+    }
+    public ResolutionChoice? SelectedResolution
+    {
+        get => SelectedGame is null ? null : AllResolutions.FirstOrDefault(r => r.Width == (SelectedGame.Entry.WindowWidth ?? GameLaunchOptions.DefaultWidth)
+            && r.Height == (SelectedGame.Entry.WindowHeight ?? GameLaunchOptions.DefaultHeight)) ?? AllResolutions[1];
+        set { if (value is not null) _ = SaveWindowOptionsAsync(SelectedWindowMode?.Key ?? GameLaunchOptions.Windowed, value); }
+    }
+    public bool SelectedResolutionMatters => SelectedWindowMode?.Key != GameLaunchOptions.GameDefault;
+    public ICommand StopGameCommand => new AsyncCommand(StopSelectedAsync, () => SelectedGame?.CanLaunch == true);
+
+    private async Task SaveWindowOptionsAsync(string mode, ResolutionChoice? resolution)
+    {
+        if (SelectedGame is null) return;
+        var id = SelectedGame.Entry.Id;
+        try
+        {
+            var updated = await _services.SetWindowOptionsAsync(id, mode, resolution?.Width, resolution?.Height);
+            _entries = await _services.LoadLibraryAsync();
+            foreach (var game in Games.Where(g => g.Entry.Id == id).ToArray())
+            {
+                int index = Games.IndexOf(game);
+                var replacement = new GameItemViewModel(updated) { Cover = game.Cover, IsSelected = game.IsSelected };
+                Games[index] = replacement;
+                int shelf = ShelfItems.IndexOf(game);
+                if (shelf >= 0) ShelfItems[shelf] = replacement;
+                if (ReferenceEquals(_selectedGame, game)) _selectedGame = replacement;
+            }
+            foreach (string property in new[] { nameof(SelectedWindowMode), nameof(SelectedResolution), nameof(SelectedResolutionMatters) }) Notify(property);
+        }
+        catch (Exception error) { ReportError(error); }
+    }
+
+    private async Task StopSelectedAsync()
+    {
+        if (SelectedGame is null) return;
+        var entry = SelectedGame.Entry;
+        try
+        {
+            await GameLaunchOptions.StopAsync(entry.PreparedMacAppPath ?? entry.SourcePath, CancellationToken.None);
+            if (_launchingId == entry.Id) { _launchingId = null; NotifyLaunch(); }
+            Status = "Игра закрыта.";
+        }
+        catch (Exception error) { ReportError(error); }
+    }
     public string LibraryCount => _entries.Count + " " + Plural(_entries.Count, "игра", "игры", "игр");
     public string FilterCount => Games.Count == 0 ? (_entries.Count == 0 ? "Библиотека пока пуста" : "Ничего не найдено") : $"Показано: {Games.Count}";
     public string DataDirectory => _services.DataDirectory;
@@ -621,7 +685,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (string property in new[] { nameof(HasSelection), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus),
             nameof(SelectedAdded), nameof(SelectedLastPlayed), nameof(LaunchHint), nameof(SelectedCover), nameof(SelectedHasCover), nameof(SelectedNoCover),
             nameof(SelectedMonogram), nameof(SelectedKind), nameof(SelectedReady), nameof(SelectedNeedsEx), nameof(SelectedStateLabel),
-            nameof(SelectedLaunching), nameof(PlayLabel), nameof(LaunchNote), nameof(HasLaunchNote) })
+            nameof(SelectedLaunching), nameof(PlayLabel), nameof(LaunchNote), nameof(HasLaunchNote),
+            nameof(SelectedHasWindowOptions), nameof(SelectedCanStop), nameof(SelectedWindowMode), nameof(SelectedResolution), nameof(SelectedResolutionMatters) })
             Notify(property);
     }
 
@@ -683,6 +748,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 }
 
 public sealed record TargetChoice(string Label, TargetPlatform Platform);
+public sealed record WindowChoice(string Label, string Key);
+public sealed record ResolutionChoice(int Width, int Height) { public string Label => Width + " × " + Height; }
 public sealed record ArchitectureChoice(string Label, string Key);
 
 /// <summary>The dashed "add a game" tile that closes the library shelf.</summary>

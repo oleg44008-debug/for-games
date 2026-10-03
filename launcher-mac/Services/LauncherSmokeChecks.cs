@@ -28,6 +28,9 @@ public static class LauncherSmokeChecks
             Directory.CreateDirectory(fixtures);
             string emptyProfile = Path.Combine(fixtures, "empty-startup-profile");
             var emptyService = new LauncherServices(emptyProfile, fakePlatform);
+            var unityWindowed = GameLaunchOptions.Arguments(GameEngineKind.Unity, null, null, null);
+            Check(unityWindowed.SequenceEqual(new[] { "-screen-fullscreen", "0", "-window-mode", "windowed", "-screen-width", "1280", "-screen-height", "720" }), "Unity games open in a 1280x720 window by default instead of the display's full size");
+            Check(GameLaunchOptions.Arguments(GameEngineKind.Godot, GameLaunchOptions.Fullscreen, 1600, 900).SequenceEqual(new[] { "--fullscreen", "--resolution", "1600x900" }) && GameLaunchOptions.Arguments(GameEngineKind.Unity, GameLaunchOptions.GameDefault, 1600, 900).Count == 0, "Godot and game-default window options map to the right command line");
             Check(!Directory.Exists(emptyProfile), "service construction performs no profile filesystem writes before the GUI");
             Check((await emptyService.LoadLibraryAsync(cancellation).ConfigureAwait(false)).Count == 0
                 && Directory.Exists(emptyProfile), "an empty profile is created and loaded during async initialization");
@@ -215,7 +218,7 @@ public static class LauncherSmokeChecks
         public List<string> OpenedApps { get; } = [];
         public List<string> RevealedPaths { get; } = [];
         public List<string> OpenedUrls { get; } = [];
-        public Task OpenAppAsync(string path, CancellationToken cancellation = default) { cancellation.ThrowIfCancellationRequested(); OpenedApps.Add(path); return Task.CompletedTask; }
+        public Task OpenAppAsync(string path, IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment, CancellationToken cancellation = default) { cancellation.ThrowIfCancellationRequested(); OpenedApps.Add(path); return Task.CompletedTask; }
         public Task RevealAsync(string path, CancellationToken cancellation = default) { cancellation.ThrowIfCancellationRequested(); RevealedPaths.Add(path); return Task.CompletedTask; }
         public Task OpenUrlAsync(string url, CancellationToken cancellation = default) { cancellation.ThrowIfCancellationRequested(); OpenedUrls.Add(url); return Task.CompletedTask; }
     }

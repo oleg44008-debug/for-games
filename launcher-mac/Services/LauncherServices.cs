@@ -158,9 +158,14 @@ public sealed class LauncherServices
         string? app = entry.PreparedMacAppPath;
         if (app is null && Directory.Exists(entry.SourcePath) && entry.SourcePath.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) app = entry.SourcePath;
         if (app is null || !Directory.Exists(app)) throw new InvalidOperationException("Сначала создайте macOS-версию в eX или добавьте готовое приложение .app.");
-        await _platform.OpenAppAsync(app, cancellation).ConfigureAwait(false);
+        var engine = GameLaunchOptions.DetectEngine(app);
+        await _platform.OpenAppAsync(app, GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight),
+            GameLaunchOptions.Environment(WineRuntime.IsWineWrapper(app)), cancellation).ConfigureAwait(false);
         await UpdateEntryAsync(entry.Id, e => e with { LastPlayedUtc = DateTimeOffset.UtcNow }, cancellation).ConfigureAwait(false);
     }
+
+    public Task<GameEntry> SetWindowOptionsAsync(Guid id, string mode, int? width, int? height, CancellationToken cancellation = default)
+        => UpdateEntryAsync(id, e => e with { WindowMode = mode, WindowWidth = width, WindowHeight = height }, cancellation);
 
     public Task RevealAsync(string path, CancellationToken cancellation = default)
         => _platform.RevealAsync(ExistingPath(path), cancellation);

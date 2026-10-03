@@ -9,7 +9,10 @@ public sealed record GameEntry(
     DateTimeOffset AddedUtc,
     DateTimeOffset? LastPlayedUtc = null,
     string? PreparedMacAppPath = null,
-    string? LastOutputPath = null)
+    string? LastOutputPath = null,
+    string? WindowMode = null,
+    int? WindowWidth = null,
+    int? WindowHeight = null)
 {
     [JsonIgnore]
     public string Kind => Directory.Exists(SourcePath)

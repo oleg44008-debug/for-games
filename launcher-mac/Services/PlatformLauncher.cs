@@ -5,7 +5,7 @@ namespace DustoreLauncherV.Mac.Services;
 public interface IPlatformLauncher
 {
     bool IsMacOS { get; }
-    Task OpenAppAsync(string appPath, CancellationToken cancellation = default);
+    Task OpenAppAsync(string appPath, IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment, CancellationToken cancellation = default);
     Task RevealAsync(string path, CancellationToken cancellation = default);
     Task OpenUrlAsync(string url, CancellationToken cancellation = default);
 }
@@ -14,10 +14,13 @@ public sealed class PlatformLauncher : IPlatformLauncher
 {
     public bool IsMacOS => OperatingSystem.IsMacOS();
 
-    public Task OpenAppAsync(string appPath, CancellationToken cancellation = default)
+    public Task OpenAppAsync(string appPath, IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment, CancellationToken cancellation = default)
     {
         if (!IsMacOS) throw new PlatformNotSupportedException("Запуск .app доступен на macOS.");
-        return RunOpenAsync(["-a", appPath], cancellation);
+        var open = new List<string> { "-a", appPath };
+        foreach (var (key, value) in environment) { open.Add("--env"); open.Add(key + "=" + value); }
+        if (arguments.Count > 0) { open.Add("--args"); open.AddRange(arguments); }
+        return RunOpenAsync(open, cancellation);
     }
 
     public Task RevealAsync(string path, CancellationToken cancellation = default)
