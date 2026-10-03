@@ -216,7 +216,7 @@ public static class WineRuntime
     private static async Task DownloadAsync(string url, long expectedBytes, string path, string stage, IProgress<WineProgress>? progress, CancellationToken cancellation)
     {
         using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("DustoreLauncherV/5.2.9");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("DustoreLauncherV/5.3.0");
         using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellation);
         response.EnsureSuccessStatusCode();
         long total = response.Content.Headers.ContentLength ?? expectedBytes;

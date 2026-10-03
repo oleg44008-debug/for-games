@@ -131,6 +131,7 @@ def main() -> int:
     parser.add_argument("--dotnet", default="dotnet")
     parser.add_argument("--converter-core", type=Path)
     parser.add_argument("--publish-dir", type=Path, help="Package an already published output instead of invoking dotnet.")
+    parser.add_argument("--edition", choices=("free", "prime"), default="free", help="Free launcher or the Prime subscriber build.")
     args = parser.parse_args()
     project, output = args.project.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -141,6 +142,7 @@ def main() -> int:
         command = [args.dotnet, "publish", str(project), "-c", "Release", "-r", args.rid, "--self-contained", "true",
                    "-p:UseAppHost=true", "-p:PublishSingleFile=false", "-p:PublishTrimmed=false", "-p:PublishAot=false",
                    "-p:DebugType=None", "-p:DebugSymbols=false", "-o", str(publish)]
+        command.append("-p:DustoreEdition=" + ("Prime" if args.edition == "prime" else "Free"))
         if args.converter_core:
             command.append("-p:ConverterCoreProject=" + str(args.converter_core.resolve()))
         run(command)
@@ -153,7 +155,10 @@ def main() -> int:
     shutil.copy2(packaging / "DustoreLauncherV.icns", resources)
     shutil.copy2(project.parent / "Assets" / "dustore-logo-original.png", resources)
     version = ET.parse(project).findtext(".//Version") or "5.2.0"
-    metadata = {"CFBundleExecutable": ASSEMBLY_NAME, "CFBundleName": "DUSTORE V", "CFBundleDisplayName": "DUSTORE LAUNCHER V",
+    prime = args.edition == "prime"
+    # Prime replaces Free in place (same bundle and identifier), so upgrading keeps the library.
+    metadata = {"CFBundleExecutable": ASSEMBLY_NAME, "CFBundleName": "DUSTORE V Prime" if prime else "DUSTORE V",
+                "CFBundleDisplayName": "DUSTORE LAUNCHER V Prime" if prime else "DUSTORE LAUNCHER V",
                 "CFBundleIdentifier": "io.dustore.launcher.v", "CFBundleVersion": version, "CFBundleShortVersionString": version,
                 "CFBundleIconFile": "DustoreLauncherV.icns", "CFBundleInfoDictionaryVersion": "6.0", "CFBundlePackageType": "APPL",
                 "NSHighResolutionCapable": True, "LSMinimumSystemVersion": {"osx-x64": "10.15", "osx-arm64": "11.0"}[args.rid],
@@ -197,7 +202,9 @@ def main() -> int:
     report["nativeDeploymentTargets"] = minimum_records
     report["compatibilityScope"] = "Intel targets Catalina 10.15+, Apple Silicon Big Sur 11+. Embedded native minima are audited; older untested operating systems are not runtime-verified by this package report."
     report["signing"] = {"adHoc": signed, "developerId": False, "notarized": False}
-    archive = output / f"DUSTORE-LAUNCHER-V-{version}-{args.rid}.app.zip"
+    report["edition"] = args.edition
+    stem = "DUSTORE-LAUNCHER-V-PRIME" if prime else "DUSTORE-LAUNCHER-V"
+    archive = output / f"{stem}-{version}-{args.rid}.app.zip"
     if signed:
         run(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", str(bundle), str(archive)])
     else:
@@ -205,7 +212,7 @@ def main() -> int:
     report["archive"] = str(archive)
     report["archiveSha256"] = sha256(archive)
     if signed:
-        installer = output / f"DUSTORE-LAUNCHER-V-{version}-{args.rid}.dmg"
+        installer = output / f"{stem}-{version}-{args.rid}.dmg"
         report["installer"] = create_installer(bundle, installer, version)
     report_path = output / f"package-{args.rid}.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

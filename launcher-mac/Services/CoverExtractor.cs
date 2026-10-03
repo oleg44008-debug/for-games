@@ -10,6 +10,7 @@ internal static class CoverExtractor
 {
     public static async Task<string?> GetCoverAsync(GameEntry entry, string dataDirectory, CancellationToken cancellation)
     {
+        if (entry.CustomCoverPath is { } custom && File.Exists(custom)) return custom;
         if (!OperatingSystem.IsMacOS() || string.IsNullOrWhiteSpace(dataDirectory)) return null;
         string? app = entry.PreparedMacAppPath is { } prepared && Directory.Exists(prepared) ? prepared
             : entry.SourcePath.EndsWith(".app", StringComparison.OrdinalIgnoreCase) && Directory.Exists(entry.SourcePath) ? entry.SourcePath

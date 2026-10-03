@@ -159,10 +159,32 @@ public sealed class LauncherServices
         if (app is null && Directory.Exists(entry.SourcePath) && entry.SourcePath.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) app = entry.SourcePath;
         if (app is null || !Directory.Exists(app)) throw new InvalidOperationException("Сначала создайте macOS-версию в eX или добавьте готовое приложение .app.");
         var engine = GameLaunchOptions.DetectEngine(app);
-        await _platform.OpenAppAsync(app, GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight),
-            GameLaunchOptions.Environment(WineRuntime.IsWineWrapper(app)), cancellation).ConfigureAwait(false);
+        var arguments = GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
+        bool wine = WineRuntime.IsWineWrapper(app);
+        if (wine && Edition.IsPrime && entry.GraphicsMode == "metal")
+        {
+            // Prime maximum performance: Direct3D straight to Metal on the CrossOver-based Wine.
+            if (!PrimeGraphics.IsInstalled) throw new InvalidOperationException("Режим «Максимум» ещё не установлен.");
+            await PrimeGraphics.LaunchAsync(app, entry, arguments, cancellation).ConfigureAwait(false);
+        }
+        else
+        {
+            var environment = new Dictionary<string, string>(GameLaunchOptions.Environment(wine));
+            if (Edition.IsPrime)
+            {
+                if (entry.ShowFps) environment["MTL_HUD_ENABLED"] = "1";
+                if (wine && entry.FpsLimit is int limit and > 0) environment["DXVK_FRAME_RATE"] = limit.ToString();
+            }
+            await _platform.OpenAppAsync(app, arguments, environment, cancellation).ConfigureAwait(false);
+        }
         await UpdateEntryAsync(entry.Id, e => e with { LastPlayedUtc = DateTimeOffset.UtcNow }, cancellation).ConfigureAwait(false);
     }
+
+    public Task<GameEntry> SetPrimeOptionsAsync(Guid id, string graphics, bool metalFx, int? fpsLimit, bool showFps, CancellationToken cancellation = default)
+        => UpdateEntryAsync(id, e => e with { GraphicsMode = graphics, MetalFxUpscale = metalFx, FpsLimit = fpsLimit, ShowFps = showFps }, cancellation);
+
+    public Task<GameEntry> SetCustomCoverAsync(Guid id, string? path, CancellationToken cancellation = default)
+        => UpdateEntryAsync(id, e => e with { CustomCoverPath = path }, cancellation);
 
     public Task<GameEntry> SetWindowOptionsAsync(Guid id, string mode, int? width, int? height, CancellationToken cancellation = default)
         => UpdateEntryAsync(id, e => e with { WindowMode = mode, WindowWidth = width, WindowHeight = height }, cancellation);

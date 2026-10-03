@@ -12,21 +12,19 @@ permissions:
 
 jobs:
   macos-launcher:
-    name: Self-contained launcher — ${{ matrix.rid }}
+    name: Self-contained launcher — ${{ matrix.edition }} ${{ matrix.rid }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
+        # GitHub's Intel macOS VMs have no GPU, so Wine's first start never settles there;
+        # the Intel Wine path is verified on a real Intel Mac and only recorded here.
         include:
-          - runner: macos-latest
-            rid: osx-arm64
-            wine: --wine-smoke
-          # GitHub's Intel macOS VMs have no GPU, so Wine's first start never settles there;
-          # the Intel Wine path is verified on a real Intel Mac and only recorded here.
-          - runner: macos-15-intel
-            rid: osx-x64
-            wine: --wine-smoke-optional
+          - { runner: macos-latest, rid: osx-arm64, edition: free, wine: --wine-smoke }
+          - { runner: macos-15-intel, rid: osx-x64, edition: free, wine: --wine-smoke-optional }
+          - { runner: macos-latest, rid: osx-arm64, edition: prime, wine: --wine-smoke }
+          - { runner: macos-15-intel, rid: osx-x64, edition: prime, wine: --wine-smoke-optional }
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
@@ -47,6 +45,7 @@ jobs:
           --project launcher-mac/DustoreLauncherV.Mac.csproj
           --converter-core src/DustoreX.AutoConverter.Core/DustoreX.AutoConverter.Core.csproj
           --rid '${{ matrix.rid }}'
+          --edition '${{ matrix.edition }}'
           --output 'launcher-artifacts/${{ matrix.rid }}'
       - name: Verify Finder launch, persistent native window, libraries, Core and UI startup
         shell: bash
@@ -62,7 +61,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: DUSTORE-LAUNCHER-V-macOS-${{ matrix.rid }}
+          name: DUSTORE-LAUNCHER-V-macOS-${{ matrix.edition }}-${{ matrix.rid }}
           path: |
             launcher-artifacts/${{ matrix.rid }}/*.app.zip
             launcher-artifacts/${{ matrix.rid }}/*.dmg

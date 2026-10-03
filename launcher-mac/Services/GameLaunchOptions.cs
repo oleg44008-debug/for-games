@@ -60,6 +60,9 @@ public static class GameLaunchOptions
     public static async Task StopAsync(string app, CancellationToken cancellation)
     {
         if (!OperatingSystem.IsMacOS()) return;
+        if (WineRuntime.IsWineWrapper(app) && File.Exists(PrimeGraphics.WineServer))
+            foreach (string metalPrefix in Directory.Exists(Path.Combine(WineRuntime.Root, "..", "WineMetal")) ? Directory.GetDirectories(Path.Combine(WineRuntime.Root, "..", "WineMetal")) : Array.Empty<string>())
+                await WineRuntime.RunAsync(PrimeGraphics.WineServer, new[] { "-k" }, new Dictionary<string, string> { ["WINEPREFIX"] = metalPrefix }, TimeSpan.FromSeconds(20), cancellation);
         if (WineRuntime.IsWineWrapper(app) && WinePrefixOf(app) is { } prefix)
         {
             string wineserver = Path.Combine(WineRuntime.CurrentLink, "bin", "wineserver");

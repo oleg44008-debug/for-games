@@ -70,14 +70,14 @@
 
     <Style Selector="TextBlock"><Setter Property="FontSize" Value="14" /></Style>
     <Style Selector="SelectableTextBlock">
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="FontSize" Value="12" />
     </Style>
-    <Style Selector="TextBlock.secondary"><Setter Property="Foreground" Value="{StaticResource TextSecondary}" /></Style>
-    <Style Selector="TextBlock.dim"><Setter Property="Foreground" Value="{StaticResource TextDim}" /></Style>
+    <Style Selector="TextBlock.secondary"><Setter Property="Foreground" Value="{DynamicResource TextSecondary}" /></Style>
+    <Style Selector="TextBlock.dim"><Setter Property="Foreground" Value="{DynamicResource TextDim}" /></Style>
     <!-- Section labels: small, grey, sentence case — like macOS sidebars and System Settings. -->
     <Style Selector="TextBlock.eyebrow">
-      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
@@ -99,15 +99,15 @@
       <Setter Property="StrokeThickness" Value="1.7" />
       <Setter Property="StrokeLineCap" Value="Round" />
       <Setter Property="StrokeJoin" Value="Round" />
-      <Setter Property="Stroke" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Stroke" Value="{DynamicResource TextSecondary}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Path.fill"><Setter Property="Fill" Value="{Binding $self.Stroke}" /></Style>
 
     <!-- Buttons: capsules on translucent fills; only hover/press feedback moves. -->
     <Style Selector="Button">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="16,9" />
@@ -131,43 +131,43 @@
       </Setter>
     </Style>
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource FillHover}" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource FillHover}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.97)" /></Style>
     <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource Hairline}" />
-      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+      <Setter Property="Background" Value="{DynamicResource Hairline}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}" />
     </Style>
-    <Style Selector="Button:disabled Path.icon"><Setter Property="Stroke" Value="{StaticResource BorderStrong}" /></Style>
+    <Style Selector="Button:disabled Path.icon"><Setter Property="Stroke" Value="{DynamicResource BorderStrong}" /></Style>
 
     <Style Selector="Button.primary">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
-      <Setter Property="Foreground" Value="{StaticResource AccentInk}" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentInk}" />
       <Setter Property="FontWeight" Value="Bold" />
     </Style>
-    <Style Selector="Button.primary Path.icon"><Setter Property="Stroke" Value="{StaticResource AccentInk}" /></Style>
+    <Style Selector="Button.primary Path.icon"><Setter Property="Stroke" Value="{DynamicResource AccentInk}" /></Style>
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentHover}" />
-      <Setter Property="Foreground" Value="{StaticResource AccentInk}" />
+      <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentInk}" />
     </Style>
     <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentPressed}" />
+      <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
     </Style>
     <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="#4DFFD73D" />
-      <Setter Property="Foreground" Value="{StaticResource AccentInk}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentInk}" />
     </Style>
     <Style Selector="Button.outline">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BorderBrush" Value="{StaticResource BorderMid}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderMid}" />
     </Style>
-    <Style Selector="Button.outline Path.icon"><Setter Property="Stroke" Value="{StaticResource Accent}" /></Style>
+    <Style Selector="Button.outline Path.icon"><Setter Property="Stroke" Value="{DynamicResource Accent}" /></Style>
     <Style Selector="Button.pill"><Setter Property="CornerRadius" Value="18" /></Style>
     <Style Selector="Button.ghost">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="FontWeight" Value="Medium" />
     </Style>
     <Style Selector="Button.round">
@@ -175,9 +175,9 @@
       <Setter Property="Height" Value="48" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="CornerRadius" Value="24" />
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
     </Style>
-    <Style Selector="Button.round:pointerover Path.icon"><Setter Property="Stroke" Value="{StaticResource TextPrimary}" /></Style>
+    <Style Selector="Button.round:pointerover Path.icon"><Setter Property="Stroke" Value="{DynamicResource TextPrimary}" /></Style>
     <Style Selector="Button.small">
       <Setter Property="Width" Value="34" />
       <Setter Property="Height" Value="34" />
@@ -197,22 +197,22 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="FontWeight" Value="Medium" />
       <Setter Property="FontSize" Value="14" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
     </Style>
-    <Style Selector="Button.nav Path.icon"><Setter Property="Stroke" Value="{StaticResource Orchid}" /><Setter Property="Width" Value="24" /></Style>
+    <Style Selector="Button.nav Path.icon"><Setter Property="Stroke" Value="{DynamicResource Orchid}" /><Setter Property="Width" Value="24" /></Style>
     <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource Hairline}" />
+      <Setter Property="Background" Value="{DynamicResource Hairline}" />
     </Style>
     <Style Selector="Button.nav.selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="Button.nav.selected"><Setter Property="FontWeight" Value="SemiBold" /></Style>
     <Style Selector="Button.nav:pressed"><Setter Property="RenderTransform" Value="none" /></Style>
 
     <!-- Segmented control for the shelf. -->
     <Style Selector="Border.segmented">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="CornerRadius" Value="9" />
       <Setter Property="Padding" Value="2" />
     </Style>
@@ -222,15 +222,15 @@
       <Setter Property="MinHeight" Value="28" />
       <Setter Property="Padding" Value="14,4" />
       <Setter Property="FontWeight" Value="Medium" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
     </Style>
     <Style Selector="Button.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="Button.segment.selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="Button.segment:pressed"><Setter Property="RenderTransform" Value="none" /></Style>
 
@@ -250,7 +250,7 @@
       <Setter Property="BorderThickness" Value="2" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
-    <Style Selector="Button.tile.selected Border.art"><Setter Property="BorderBrush" Value="{StaticResource Orchid}" /></Style>
+    <Style Selector="Button.tile.selected Border.art"><Setter Property="BorderBrush" Value="{DynamicResource Orchid}" /></Style>
     <Style Selector="Button.addtile">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Padding" Value="0" />
@@ -258,11 +258,11 @@
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
     </Style>
-    <Style Selector="Button.addtile:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{StaticResource Hairline}" /></Style>
-    <Style Selector="Button.addtile:pointerover Rectangle"><Setter Property="Stroke" Value="{StaticResource Orchid}" /></Style>
+    <Style Selector="Button.addtile:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Hairline}" /></Style>
+    <Style Selector="Button.addtile:pointerover Rectangle"><Setter Property="Stroke" Value="{DynamicResource Orchid}" /></Style>
 
     <Style Selector="Button.platform">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="BorderThickness" Value="1.5" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="CornerRadius" Value="12" />
@@ -272,15 +272,15 @@
       <Setter Property="FontWeight" Value="Normal" />
     </Style>
     <Style Selector="Button.platform.selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource AccentSubtle}" />
-      <Setter Property="BorderBrush" Value="{StaticResource Orchid}" />
+      <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Orchid}" />
     </Style>
-    <Style Selector="Button.platform.selected Path.icon"><Setter Property="Stroke" Value="{StaticResource Orchid}" /></Style>
+    <Style Selector="Button.platform.selected Path.icon"><Setter Property="Stroke" Value="{DynamicResource Orchid}" /></Style>
 
     <!-- Cards are inset groups with a hairline and a soft drop shadow. -->
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="{StaticResource Surface}" />
-      <Setter Property="BorderBrush" Value="{StaticResource Hairline}" />
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="22" />
@@ -289,60 +289,60 @@
     <Style Selector="Border.chip">
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="9,3" />
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="TextBox">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="CornerRadius" Value="9" />
       <Setter Property="MinHeight" Value="36" />
       <Setter Property="Padding" Value="12,8" />
       <Setter Property="SelectionBrush" Value="#66FF62AB" />
-      <Setter Property="CaretBrush" Value="{StaticResource Orchid}" />
+      <Setter Property="CaretBrush" Value="{DynamicResource Orchid}" />
     </Style>
     <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="{StaticResource FillHover}" />
+      <Setter Property="Background" Value="{DynamicResource FillHover}" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="BorderBrush" Value="#99FF62AB" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
     <Style Selector="TextBox /template/ TextBlock#PART_Watermark, TextBox /template/ TextBlock#PART_FloatingWatermark">
-      <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}" />
     </Style>
     <Style Selector="TextBox.search">
       <Setter Property="CornerRadius" Value="9" />
       <Setter Property="Padding" Value="34,8,12,8" />
     </Style>
     <Style Selector="ComboBox">
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="CornerRadius" Value="9" />
       <Setter Property="MinHeight" Value="36" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="ComboBox:pointerover /template/ Border#Background">
-      <Setter Property="Background" Value="{StaticResource FillHover}" />
+      <Setter Property="Background" Value="{DynamicResource FillHover}" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="Expander">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
     </Style>
     <Style Selector="ProgressBar">
-      <Setter Property="Foreground" Value="{StaticResource Orchid}" />
-      <Setter Property="Background" Value="{StaticResource Fill}" />
+      <Setter Property="Foreground" Value="{DynamicResource Orchid}" />
+      <Setter Property="Background" Value="{DynamicResource Fill}" />
       <Setter Property="MinHeight" Value="4" />
       <Setter Property="CornerRadius" Value="2" />
     </Style>

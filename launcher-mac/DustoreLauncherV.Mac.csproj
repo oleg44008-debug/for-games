@@ -9,8 +9,11 @@
     <Product>DUSTORE LAUNCHER V</Product>
     <AssemblyTitle>DUSTORE LAUNCHER V for macOS</AssemblyTitle>
     <Company>eXepc</Company>
-    <Version>5.2.9</Version>
+    <Version>5.3.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Free or Prime; packaging passes -p:DustoreEdition=Prime for the subscriber build. -->
+    <DustoreEdition Condition="'$(DustoreEdition)' == ''">Free</DustoreEdition>
+    <DefineConstants Condition="'$(DustoreEdition)' == 'Prime'">$(DefineConstants);PRIME</DefineConstants>
     <UseAppHost>true</UseAppHost>
     <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>

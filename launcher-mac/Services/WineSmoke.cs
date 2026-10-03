@@ -60,9 +60,27 @@ internal static class WineSmoke
             $"exit {code}\nwine {versionText.Trim()}\nhome {wineHome}\n\n{output}", cancellation);
         bool token = output.Contains(Token, StringComparison.Ordinal);
         if (!token) throw new InvalidOperationException($"The packaged game did not run under Wine (exit {code}): " + Tail(output));
+        object? prime = null;
+        if (Edition.IsPrime)
+        {
+            // Maximum performance: CrossOver-based Wine with DXMT must install and run Windows code.
+            var primeInstall = Stopwatch.StartNew();
+            await PrimeGraphics.InstallAsync(new Progress<WineProgress>(p => Console.WriteLine("prime " + p.Stage)), cancellation);
+            var libraries = PrimeGraphics.InstalledLibraries();
+            if (!libraries.Contains("x86_64-windows/d3d11.dll") || !libraries.Contains("x86_64-unix/winemetal.so"))
+                throw new InvalidOperationException("DXMT was not installed into the Prime Wine: " + string.Join(", ", libraries));
+            string metalPrefix = Path.Combine(workDirectory, "wine-smoke-metal-prefix");
+            var metalEnv = new Dictionary<string, string> { ["WINEPREFIX"] = metalPrefix, ["WINEDEBUG"] = "-all", ["WINEDLLOVERRIDES"] = "mscoree,mshtml=" };
+            await WineRuntime.RunAsync(PrimeGraphics.WineBinary, new[] { "wineboot", "--init" }, metalEnv, TimeSpan.FromMinutes(10), cancellation);
+            await WineRuntime.RunAsync(PrimeGraphics.WineServer, new[] { "-w" }, metalEnv, TimeSpan.FromMinutes(10), cancellation);
+            var (metalCode, metalOutput) = await WineRuntime.RunAsync(PrimeGraphics.WineBinary, new[] { "cmd", "/c", "echo", Token }, metalEnv, TimeSpan.FromMinutes(5), cancellation);
+            if (!metalOutput.Contains(Token, StringComparison.Ordinal))
+                throw new InvalidOperationException($"The Prime Wine did not run Windows code (exit {metalCode}): " + Tail(metalOutput));
+            prime = new { dxmtLibraries = libraries, installSeconds = Math.Round(primeInstall.Elapsed.TotalSeconds, 1), ranWindowsCode = true };
+        }
         return new
         {
-            status = "Pass", wineInstalledByLauncher = !wasInstalled, wineVersion = versionText.Trim(), wineArchive = WineRuntime.ArchiveName,
+            status = "Pass", edition = Edition.Name, primeMetal = prime, wineInstalledByLauncher = !wasInstalled, wineVersion = versionText.Trim(), wineArchive = WineRuntime.ArchiveName,
             wineSha256 = WineRuntime.Sha256, dxvkVersion = WineRuntime.DxvkVersion, dxvkLibraries = dxvk, installSeconds = Math.Round(install.Elapsed.TotalSeconds, 1), chosenExecutable = "WineSmoke.exe",
             decoySkipped = true, packagedRunExitCode = code, tokenSeen = token, runSeconds = Math.Round(run.Elapsed.TotalSeconds, 1),
             totalSeconds = Math.Round(total.Elapsed.TotalSeconds, 1), appleSilicon = WineRuntime.IsAppleSilicon

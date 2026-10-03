@@ -37,6 +37,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private Guid? _downloadedGameId;
     private string _downloadNote = "";
     private Task<bool>? _wineInstall;
+    private UiPreferences _ui = new();
     private Guid? _launchingId;
     private bool _launchIsWine;
     private string _wineStatus = "";
@@ -164,6 +165,87 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set { if (value is not null) _ = SaveWindowOptionsAsync(SelectedWindowMode?.Key ?? GameLaunchOptions.Windowed, value); }
     }
     public bool SelectedResolutionMatters => SelectedWindowMode?.Key != GameLaunchOptions.GameDefault;
+    // ---- Prime per-game performance ----
+    public bool SelectedIsWineGame => SelectedGame?.CanLaunch == true && WineRuntime.IsWineWrapper(SelectedGame.Entry.PreparedMacAppPath);
+    public bool SelectedShowsPerformance => SelectedGame?.CanLaunch == true;
+    public IReadOnlyList<WindowChoice> GraphicsModes => AllGraphicsModes;
+    private static readonly IReadOnlyList<WindowChoice> AllGraphicsModes = new[]
+    {
+        new WindowChoice("Стандарт · DXVK", "standard"), new WindowChoice("Максимум · Metal", "metal")
+    };
+    public IReadOnlyList<WindowChoice> FpsLimits => AllFpsLimits;
+    private static readonly IReadOnlyList<WindowChoice> AllFpsLimits = new[]
+    {
+        new WindowChoice("Без ограничения FPS", "0"), new WindowChoice("Не больше 30 FPS", "30"), new WindowChoice("Не больше 60 FPS", "60")
+    };
+    public WindowChoice? SelectedGraphicsMode
+    {
+        get => SelectedGame is null ? null : AllGraphicsModes.FirstOrDefault(m => m.Key == (SelectedGame.Entry.GraphicsMode ?? "standard"));
+        set { if (value is not null) _ = SavePrimeOptionsAsync(value.Key, null, null, null); }
+    }
+    public WindowChoice? SelectedFpsLimit
+    {
+        get => SelectedGame is null ? null : AllFpsLimits.FirstOrDefault(m => m.Key == (SelectedGame.Entry.FpsLimit ?? 0).ToString());
+        set { if (value is not null) _ = SavePrimeOptionsAsync(null, null, int.Parse(value.Key), null); }
+    }
+    public bool SelectedMetalFx { get => SelectedGame?.Entry.MetalFxUpscale == true; set => _ = SavePrimeOptionsAsync(null, value, null, null); }
+    public bool SelectedShowFps { get => SelectedGame?.Entry.ShowFps == true; set => _ = SavePrimeOptionsAsync(null, null, null, value); }
+    public bool SelectedMetalMode => SelectedGame?.Entry.GraphicsMode == "metal";
+    public string PerformanceNote => !Edition.IsPrime
+        ? "Режим «Максимум» (Direct3D прямо в Metal + апскейлинг MetalFX), счётчик и ограничение FPS — в Prime."
+        : SelectedMetalMode ? "Максимум: Direct3D идёт прямо в Metal (DXMT), без промежуточного Vulkan. Если игра не запускается — верните «Стандарт»."
+        : "Стандарт: DXVK через MoltenVK. Для большего FPS выберите «Максимум».";
+    public ICommand PickCoverCommand => new RelayCommand(() => CoverPickRequested?.Invoke(this, EventArgs.Empty), () => Edition.IsPrime);
+    public event EventHandler? CoverPickRequested;
+
+    public async Task SetCustomCoverAsync(string path)
+    {
+        if (SelectedGame is null || !Edition.IsPrime) return;
+        var id = SelectedGame.Entry.Id;
+        string covers = Path.Combine(_services.DataDirectory, "Covers");
+        Directory.CreateDirectory(covers);
+        string copy = Path.Combine(covers, id.ToString("N") + "-custom" + Path.GetExtension(path));
+        File.Copy(path, copy, overwrite: true);
+        await _services.SetCustomCoverAsync(id, copy);
+        _covers.Remove(id); _coverAttempts.Remove(id);
+        await PerformAsync("Меняю обложку…", ct => ReloadLibraryAsync(ct, id));
+    }
+
+    private async Task SavePrimeOptionsAsync(string? graphics, bool? metalFx, int? fpsLimit, bool? showFps)
+    {
+        if (SelectedGame is null || !Edition.IsPrime) return;
+        var e = SelectedGame.Entry;
+        string mode = graphics ?? e.GraphicsMode ?? "standard";
+        try
+        {
+            if (mode == "metal" && !PrimeGraphics.IsInstalled)
+            {
+                Status = "Устанавливаю режим «Максимум»: Wine на основе CrossOver и DXMT (один раз, около 260 МБ)…";
+                await PrimeGraphics.InstallAsync(new Progress<WineProgress>(p => Status = p.Stage + (p.Fraction < 1 ? $" {p.Fraction * 100:0}%" : "")));
+                Status = "Режим «Максимум» установлен.";
+            }
+            var updated = await _services.SetPrimeOptionsAsync(e.Id, mode, metalFx ?? e.MetalFxUpscale, fpsLimit ?? e.FpsLimit, showFps ?? e.ShowFps);
+            await ReplaceEntryAsync(updated);
+        }
+        catch (Exception error) { ReportError(error); }
+        foreach (string property in new[] { nameof(SelectedGraphicsMode), nameof(SelectedFpsLimit), nameof(SelectedMetalFx), nameof(SelectedShowFps), nameof(SelectedMetalMode), nameof(PerformanceNote) })
+            Notify(property);
+    }
+
+    private async Task ReplaceEntryAsync(GameEntry updated)
+    {
+        _entries = await _services.LoadLibraryAsync();
+        foreach (var game in Games.Where(g => g.Entry.Id == updated.Id).ToArray())
+        {
+            int index = Games.IndexOf(game);
+            var replacement = new GameItemViewModel(updated) { Cover = game.Cover, IsSelected = game.IsSelected };
+            Games[index] = replacement;
+            int shelf = ShelfItems.IndexOf(game);
+            if (shelf >= 0) ShelfItems[shelf] = replacement;
+            if (ReferenceEquals(_selectedGame, game)) _selectedGame = replacement;
+        }
+    }
+
     public ICommand StopGameCommand => new AsyncCommand(StopSelectedAsync, () => SelectedGame?.CanLaunch == true);
 
     private async Task SaveWindowOptionsAsync(string mode, ResolutionChoice? resolution)
@@ -195,6 +277,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             await GameLaunchOptions.StopAsync(entry.PreparedMacAppPath ?? entry.SourcePath, CancellationToken.None);
+            if (entry.GraphicsMode == "metal") await PrimeGraphics.StopAsync(entry, CancellationToken.None);
             if (_launchingId == entry.Id) { _launchingId = null; NotifyLaunch(); }
             Status = "Игра закрыта.";
         }
@@ -275,6 +358,80 @@ public sealed class MainViewModel : INotifyPropertyChanged
     };
     public string WebRetryUrl => WebError?.FailingUrl is { Length: > 0 } failed ? failed : WebStartUrl;
     public void ClearWebError() => WebError = null;
+
+    // ---- Edition and appearance (themes, accents and sections are Prime) ----
+    public bool IsPrime => Edition.IsPrime;
+    public bool IsFree => !Edition.IsPrime;
+    public string EditionLabel => Edition.IsPrime ? "Prime" : "Free";
+    public IReadOnlyList<ThemeChoice> ThemeChoices => UiPreferences.Themes;
+    public IReadOnlyList<AccentChoice> AccentChoices => UiPreferences.Accents;
+    public ThemeChoice SelectedTheme
+    {
+        get => UiPreferences.Themes.FirstOrDefault(t => t.Key == _ui.Theme) ?? UiPreferences.Themes[0];
+        set { if (value is not null && Edition.IsPrime) { _ui.Theme = value.Key; SaveAppearance(); } }
+    }
+    public AccentChoice SelectedAccent
+    {
+        get => UiPreferences.Accents.FirstOrDefault(a => a.Key == _ui.Accent) ?? UiPreferences.Accents[0];
+        set { if (value is not null && Edition.IsPrime) { _ui.Accent = value.Key; SaveAppearance(); } }
+    }
+    public bool ShowExSection { get => !IsPrime || _ui.ShowEx; set { _ui.ShowEx = value; SaveAppearance(); } }
+    public bool ShowStoreSection { get => !IsPrime || _ui.ShowStore; set { _ui.ShowStore = value; SaveAppearance(); } }
+    public bool ShowHomeSection { get => !IsPrime || _ui.ShowHome; set { _ui.ShowHome = value; SaveAppearance(); } }
+    public bool ShowJamsSection { get => !IsPrime || _ui.ShowJams; set { _ui.ShowJams = value; SaveAppearance(); } }
+    public bool ShowAssetsSection { get => !IsPrime || _ui.ShowAssets; set { _ui.ShowAssets = value; SaveAppearance(); } }
+    public bool ShowStoreGroup => ShowStoreSection || ShowHomeSection || ShowJamsSection || ShowAssetsSection;
+    public bool ShowHeroCard { get => !IsPrime || _ui.ShowHero; set { _ui.ShowHero = value; SaveAppearance(); } }
+    public bool CompactShelf { get => IsPrime && _ui.CompactShelf; set { _ui.CompactShelf = value; SaveAppearance(); } }
+    public double TileSize => CompactShelf ? 132 : 172;
+    public double TileArt => CompactShelf ? 92 : 120;
+    public bool IntroAnimation { get => IsPrime && _ui.IntroAnimation; set { _ui.IntroAnimation = value; SaveAppearance(); } }
+    public bool HasSelectionAndHero => HasSelection && ShowHeroCard;
+
+    /// <summary>Free converts at most 4 MB/s of game data; Prime finishes as fast as the Mac allows.</summary>
+    private async Task HoldFreeExPaceAsync(string input, System.Diagnostics.Stopwatch started, CancellationToken ct)
+    {
+        if (Edition.IsPrime) return;
+        long bytes = 0;
+        try
+        {
+            bytes = File.Exists(input) ? new FileInfo(input).Length
+                : Directory.EnumerateFiles(input, "*", SearchOption.AllDirectories).Sum(f => new FileInfo(f).Length);
+        }
+        catch (Exception) { return; }
+        var target = TimeSpan.FromSeconds(bytes / (double)Edition.FreeExBytesPerSecond);
+        while (started.Elapsed < target)
+        {
+            double done = started.Elapsed.TotalSeconds / target.TotalSeconds;
+            Status = $"Free: eX переносит не быстрее 4 МБ/с — {done * 100:0}%. В Prime перенос без ограничений.";
+            await Task.Delay(400, ct);
+        }
+    }
+
+    public void LoadAppearance()
+    {
+        _ui = UiPreferences.Load(_services.DataDirectory);
+        _ui.Apply();
+        NotifyAppearance();
+    }
+
+    public static bool PrimeIntroWanted(string dataDirectory) => Edition.IsPrime && UiPreferences.Load(dataDirectory).IntroAnimation;
+
+    private void SaveAppearance()
+    {
+        if (!Edition.IsPrime) return;
+        _ui.Save(_services.DataDirectory);
+        _ui.Apply();
+        NotifyAppearance();
+    }
+
+    private void NotifyAppearance()
+    {
+        foreach (string property in new[] { nameof(SelectedTheme), nameof(SelectedAccent), nameof(ShowExSection), nameof(ShowStoreSection), nameof(ShowHomeSection),
+            nameof(ShowJamsSection), nameof(ShowAssetsSection), nameof(ShowStoreGroup), nameof(ShowHeroCard), nameof(CompactShelf), nameof(TileSize), nameof(TileArt),
+            nameof(IntroAnimation), nameof(HasSelectionAndHero) })
+            Notify(property);
+    }
 
     // Wine for Windows games packaged by eX: installed by the launcher itself.
     public bool WineInstalled => WineRuntime.IsInstalled;
@@ -510,6 +667,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public Task InitializeAsync() => PerformAsync("Загружаю библиотеку…", async cancellation =>
     {
+        LoadAppearance();
         await ReloadLibraryAsync(cancellation);
         Status = _entries.Count == 0
             ? "Библиотека готова. Добавьте игру или выберите исходную сборку в eX."
@@ -565,7 +723,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var request = new ConversionRequest(SourcePath, SelectedTarget.Platform, GameName.Trim(), OutputPath,
                 string.IsNullOrWhiteSpace(RuntimeVersion) ? null : RuntimeVersion.Trim(), EffectiveArchitecture,
                 string.IsNullOrWhiteSpace(RuntimePath) ? null : RuntimePath.Trim(), _plan.Method);
+            var started = System.Diagnostics.Stopwatch.StartNew();
             var result = await _services.ConvertAsync(request, new Progress<string>(AppendLog), ct);
+            await HoldFreeExPaceAsync(request.InputPath, started, ct);
             ResultPath = result.OutputPath;
             foreach (string warning in result.Warnings) AppendLog(warning);
             if (request.Target == TargetPlatform.MacOS)
@@ -682,11 +842,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void NotifySelection()
     {
-        foreach (string property in new[] { nameof(HasSelection), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus),
+        foreach (string property in new[] { nameof(HasSelection), nameof(HasSelectionAndHero), nameof(NoSelection), nameof(SelectedTitle), nameof(SelectedSource), nameof(SelectedStatus),
             nameof(SelectedAdded), nameof(SelectedLastPlayed), nameof(LaunchHint), nameof(SelectedCover), nameof(SelectedHasCover), nameof(SelectedNoCover),
             nameof(SelectedMonogram), nameof(SelectedKind), nameof(SelectedReady), nameof(SelectedNeedsEx), nameof(SelectedStateLabel),
             nameof(SelectedLaunching), nameof(PlayLabel), nameof(LaunchNote), nameof(HasLaunchNote),
-            nameof(SelectedHasWindowOptions), nameof(SelectedCanStop), nameof(SelectedWindowMode), nameof(SelectedResolution), nameof(SelectedResolutionMatters) })
+            nameof(SelectedHasWindowOptions), nameof(SelectedCanStop), nameof(SelectedWindowMode), nameof(SelectedResolution), nameof(SelectedResolutionMatters),
+            nameof(SelectedIsWineGame), nameof(SelectedShowsPerformance), nameof(SelectedGraphicsMode), nameof(SelectedFpsLimit), nameof(SelectedMetalFx),
+            nameof(SelectedShowFps), nameof(SelectedMetalMode), nameof(PerformanceNote) })
             Notify(property);
     }
 

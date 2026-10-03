@@ -60,6 +60,16 @@ public partial class MainWindow : Window
             ViewModel.Section = Program.StartSection!;
             ShowWebSection();
         }
+        ViewModel.CoverPickRequested += async (_, _) =>
+        {
+            if (!StorageProvider.CanOpen) return;
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Обложка игры", AllowMultiple = false,
+                FileTypeFilter = new[] { new FilePickerFileType("Изображения") { Patterns = new[] { "*.png", "*.jpg", "*.jpeg" } } }
+            });
+            if (files.FirstOrDefault()?.TryGetLocalPath() is { } path) await ViewModel.SetCustomCoverAsync(path);
+        };
         Opened += OnOpened;
         Closing += OnClosing;
         KeyDown += OnKeyDown;
@@ -99,6 +109,7 @@ public partial class MainWindow : Window
         _web?.Navigate(url);
     }
     private void DismissError_Click(object? sender, RoutedEventArgs e) => ViewModel.DismissError();
+    private void Intro_PointerPressed(object? sender, PointerPressedEventArgs e) => IntroMotion.Skip();
     private void CancelDownload_Click(object? sender, RoutedEventArgs e) => _web?.CancelDownload();
 
     private void DragArea_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -122,6 +133,7 @@ public partial class MainWindow : Window
 
     private async void OnOpened(object? sender, EventArgs args)
     {
+        if (!Program.UiSmoke && MainViewModel.PrimeIntroWanted(ViewModel.DataDirectory)) _ = IntroMotion.PlayAsync(this);
         try
         {
             await InitializeAsync();

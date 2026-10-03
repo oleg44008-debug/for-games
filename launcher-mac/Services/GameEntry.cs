@@ -12,7 +12,12 @@ public sealed record GameEntry(
     string? LastOutputPath = null,
     string? WindowMode = null,
     int? WindowWidth = null,
-    int? WindowHeight = null)
+    int? WindowHeight = null,
+    string? GraphicsMode = null,
+    bool MetalFxUpscale = false,
+    int? FpsLimit = null,
+    bool ShowFps = false,
+    string? CustomCoverPath = null)
 {
     [JsonIgnore]
     public string Kind => Directory.Exists(SourcePath)
