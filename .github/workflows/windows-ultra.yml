@@ -16,7 +16,8 @@ jobs:
       - name: Run ULTRA on a real process and check what it changed and restored
         shell: pwsh
         run: |
-          powercfg /list
+          powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e
+          powercfg /getactivescheme
           ./ultra-bin/UltraTest.exe ultra-report.txt
           $code = $LASTEXITCODE
           Get-Content ultra-report.txt
