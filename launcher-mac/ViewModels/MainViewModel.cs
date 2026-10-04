@@ -736,6 +736,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task ConvertAsync()
     {
         if (!CanConvert || _plan is null) return;
+        if (!Edition.IsPrime) await TrustedClock.SyncAsync(DataDirectory);
         if (ExDailyQuota.Refusal(DataDirectory) is { } quota) { Status = quota; return; }
         await PerformAsync("Создаю пакет…", async ct =>
         {

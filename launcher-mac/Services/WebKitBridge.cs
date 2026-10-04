@@ -12,7 +12,7 @@ internal static unsafe partial class WebKitBridge
     private const string ObjC = "/usr/lib/libobjc.A.dylib";
     private const string WebKitFramework = "/System/Library/Frameworks/WebKit.framework/WebKit";
     // WKWebView reports a bare WebKit user agent; sites expecting Safari get the familiar token.
-    private const string UserAgentSuffix = "Version/18.0 Safari/605.1.15 DustoreLauncherV/5.3.2";
+    private const string UserAgentSuffix = "Version/18.0 Safari/605.1.15 DustoreLauncherV/5.3.3";
 
     [StructLayout(LayoutKind.Sequential)]
     private struct CGRect { public double X, Y, Width, Height; }

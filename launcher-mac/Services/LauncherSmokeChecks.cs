@@ -31,6 +31,33 @@ public static class LauncherSmokeChecks
             var unityWindowed = GameLaunchOptions.Arguments(GameEngineKind.Unity, null, null, null);
             Check(unityWindowed.SequenceEqual(new[] { "-screen-fullscreen", "0", "-window-mode", "windowed", "-screen-width", "1280", "-screen-height", "720" }), "Unity games open in a 1280x720 window by default instead of the display's full size");
             Check(GameLaunchOptions.Arguments(GameEngineKind.Godot, GameLaunchOptions.Fullscreen, 1600, 900).SequenceEqual(new[] { "--fullscreen", "--resolution", "1600x900" }) && GameLaunchOptions.Arguments(GameEngineKind.Unity, GameLaunchOptions.GameDefault, 1600, 900).Count == 0, "Godot and game-default window options map to the right command line");
+            if (!Edition.IsPrime)
+            {
+                string quotaDir = Path.Combine(Path.GetTempPath(), "dustore-quota-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(quotaDir);
+                var serverNow = new DateTimeOffset(2026, 10, 4, 12, 0, 0, TimeSpan.Zero);
+                TrustedClock.ServerOverride = () => serverNow;
+                await TrustedClock.SyncAsync(quotaDir).ConfigureAwait(false);
+                for (int i = 0; i < ExDailyQuota.FreePerDay; i++) ExDailyQuota.RecordSuccess(quotaDir);
+                Check(ExDailyQuota.Refusal(quotaDir) is not null, "Free refuses the fourth eX transfer of a server day");
+                serverNow = serverNow.AddHours(-30);
+                await TrustedClock.SyncAsync(quotaDir).ConfigureAwait(false);
+                Check(ExDailyQuota.Refusal(quotaDir) is not null, "winding time back does not reopen the eX quota");
+                ExDailyQuota.DeleteFirstCopy(quotaDir);
+                Check(ExDailyQuota.Refusal(quotaDir) is not null, "deleting the profile copy keeps the eX quota");
+                ExDailyQuota.CorruptFirstCopy(quotaDir);
+                Check(ExDailyQuota.Refusal(quotaDir) is not null, "an edited quota file reads as used up");
+                ExDailyQuota.Clear(quotaDir);
+                serverNow = new DateTimeOffset(2026, 10, 4, 12, 0, 0, TimeSpan.Zero);
+                await TrustedClock.SyncAsync(quotaDir).ConfigureAwait(false);
+                for (int i = 0; i < ExDailyQuota.FreePerDay; i++) ExDailyQuota.RecordSuccess(quotaDir);
+                serverNow = new DateTimeOffset(2026, 10, 4, 21, 1, 0, TimeSpan.Zero);
+                await TrustedClock.SyncAsync(quotaDir).ConfigureAwait(false);
+                Check(ExDailyQuota.UsedToday(quotaDir) == 0, "a new Moscow day by server time reopens the eX quota");
+                ExDailyQuota.Clear(quotaDir);
+                TrustedClock.ServerOverride = null;
+                Directory.Delete(quotaDir, true);
+            }
             UltraMode.Display = (1440, 900);
             var (ultraW, ultraH) = UltraMode.RenderSize();
             var ultraUnity = UltraMode.Arguments(GameEngineKind.Unity);
