@@ -78,6 +78,7 @@ jobs:
           EOF
       - name: Same game in desktop WebKit (Safari engine) and Chromium — is the black frame the simulator or WebKit?
         if: always()
+        continue-on-error: true
         run: |
           UDID=$(xcrun simctl list devices booted -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for v in d.values() for x in v))")
           DATA=$(xcrun simctl get_app_container "$UDID" ru.dustore.launcher.ios data)
