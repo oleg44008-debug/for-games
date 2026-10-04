@@ -76,6 +76,38 @@ jobs:
           print("SELFTEST", "PASS" if ok else "FAIL")
           sys.exit(0 if ok else 1)
           EOF
+      - name: Same game in desktop WebKit (Safari engine) and Chromium — is the black frame the simulator or WebKit?
+        if: always()
+        run: |
+          UDID=$(xcrun simctl list devices booted -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for v in d.values() for x in v))")
+          DATA=$(xcrun simctl get_app_container "$UDID" ru.dustore.launcher.ios data)
+          WEB=$(dirname "$(find "$DATA/Documents/Games" -name index.wasm | head -1)")
+          echo "web build: $WEB"; ls -la "$WEB"
+          (cd "$WEB" && python3 -m http.server 8765 >/dev/null 2>&1 &)
+          python3 -m pip install --quiet playwright && python3 -m playwright install webkit chromium >/dev/null
+          python3 - <<'EOF'
+          import asyncio
+          from playwright.async_api import async_playwright
+          async def shoot(browser_type, name):
+              b = await browser_type.launch()
+              page = await b.new_page(viewport={"width": 1280, "height": 720})
+              logs = []
+              page.on("console", lambda m: logs.append(m.text))
+              await page.goto("http://127.0.0.1:8765/index.html")
+              await page.wait_for_timeout(15000)
+              await page.screenshot(path=f"out/shots/{name}-15s.png")
+              await page.mouse.click(640, 360)
+              await page.wait_for_timeout(20000)
+              await page.screenshot(path=f"out/shots/{name}-35s.png")
+              open(f"out/shots/{name}-console.txt", "w").write("
+".join(logs[:120]))
+              await b.close()
+          async def main():
+              async with async_playwright() as p:
+                  await shoot(p.webkit, "webkit")
+                  await shoot(p.chromium, "chromium")
+          asyncio.run(main())
+          EOF
       - uses: actions/upload-artifact@v4
         if: always()
         with:
