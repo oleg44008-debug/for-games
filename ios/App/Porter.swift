@@ -168,6 +168,12 @@ enum Porter {
         <style>html,body,#canvas{margin:0;padding:0;border:0;width:100%;height:100%;background:#000;overflow:hidden;touch-action:none}#canvas{display:block}#canvas:focus{outline:none}
         #ex-status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:#E6C6D9;font:600 15px -apple-system,sans-serif;background:#120811}</style></head>
         <body><canvas id="canvas"></canvas><div id="ex-status">eX запускает игру…</div>
+        <script>
+        if (location.search.indexOf('selftest') >= 0) {
+          const get = HTMLCanvasElement.prototype.getContext;
+          HTMLCanvasElement.prototype.getContext = function (type, attrs) { return get.call(this, type, Object.assign({}, attrs || {}, { preserveDrawingBuffer: true })); };
+        }
+        </script>
         <script src="index.js"></script>
         <script>
         function exReport(m){try{window.webkit.messageHandlers.ex.postMessage(m)}catch(e){}}
@@ -178,6 +184,16 @@ enum Porter {
           for (const t of ['pointerdown','mousedown','pointerup','mouseup','click']) c.dispatchEvent(new (t.startsWith('pointer')?PointerEvent:MouseEvent)(t,{bubbles:true,clientX:x,clientY:y,button:0,buttons:t.endsWith('down')?1:0,pointerType:'mouse'}));
           exReport('log: selftest tapped the canvas');
         }, 30000);
+        if (location.search.indexOf('selftest') >= 0) {
+          const probe=document.createElement('canvas'); probe.width=probe.height=48;
+          probe.style.cssText='position:absolute;right:8px;top:60px;width:48px;height:48px;z-index:9';
+          document.body.appendChild(probe);
+          const g=probe.getContext('webgl2'); if(g){g.clearColor(1,0,0.6,1);g.clear(g.COLOR_BUFFER_BIT);}
+          for (const at of [20000, 45000, 65000]) setTimeout(function(){
+            try { const c=document.getElementById('canvas'); exReport('frame: '+c.width+'x'+c.height+' '+c.toDataURL('image/jpeg',0.6)); }
+            catch(e){ exReport('log: frame failed '+e); }
+          }, at);
+        }
         const engine = new Engine({ executable: 'index', mainPack: 'index.pck', canvasResizePolicy: 2, args: [], focusCanvas: true, ensureCrossOriginIsolationHeaders: false, experimentalVK: false, gdextensionLibs: [] });
         engine.startGame({ onProgress: (cur, total) => { if (total > 0) document.getElementById('ex-status').textContent = 'eX загружает игру… ' + Math.round(cur * 100 / total) + '%'; } })
           .then(() => { const s = document.getElementById('ex-status'); if (s) s.remove(); exReport('started'); })

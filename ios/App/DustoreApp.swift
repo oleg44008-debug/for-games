@@ -63,7 +63,15 @@ enum SelfTest {
     nonisolated static func gameReported(_ text: String) {
         guard ProcessInfo.processInfo.arguments.contains("-dustoreSelfTest") else { return }
         Task { @MainActor in
-            if text.hasPrefix("log: ") {
+            if text.hasPrefix("frame: ") {
+                let parts = text.dropFirst(7).split(separator: " ", maxSplits: 1)
+                var frames = report["frames"] as? [String] ?? []
+                frames.append(String(parts.first ?? ""))
+                report["frames"] = frames
+                if parts.count == 2, let comma = parts[1].firstIndex(of: ","), let data = Data(base64Encoded: String(parts[1][parts[1].index(after: comma)...])) {
+                    try? data.write(to: url.deletingLastPathComponent().appendingPathComponent("frame-\(frames.count).jpg"))
+                }
+            } else if text.hasPrefix("log: ") {
                 var log = report["engineLog"] as? [String] ?? []
                 log.append(String(text.dropFirst(5)))
                 report["engineLog"] = log

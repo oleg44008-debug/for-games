@@ -62,6 +62,7 @@ jobs:
           sleep 25; xcrun simctl io "$UDID" screenshot out/shots/game-40s.png
           sleep 30; xcrun simctl io "$UDID" screenshot out/shots/game-70s.png
           cp "$DATA/Documents/selftest.json" out/selftest.json || true
+          cp "$DATA"/Documents/frame-*.jpg out/shots/ 2>/dev/null || true
           cat out/selftest.json || true
           xcrun simctl terminate "$UDID" ru.dustore.launcher.ios || true
           xcrun simctl launch "$UDID" ru.dustore.launcher.ios; sleep 8
