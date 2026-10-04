@@ -99,7 +99,7 @@ enum PrimeLicense {
         switch answer {
         case .owned: return "Prime активирован на этом устройстве. Перезапустите приложение, чтобы включились все возможности."
         case .needsLogin: return "Войдите в свой аккаунт Dustore во вкладке «Магазин» и проверьте покупку снова."
-        case .notOwned: return "В этом аккаунте Dustore Prime не куплен. Купите DustoreX Prime в магазине и повторите."
+        case .notOwned: return "В этом аккаунте Dustore Prime не куплен. Купите Prime в магазине Dustore и повторите."
         case .notPublished: return "Prime ещё не выставлен в магазине Dustore."
         case .offline: return "Нет связи с магазином Dustore. Проверьте интернет и повторите."
         }

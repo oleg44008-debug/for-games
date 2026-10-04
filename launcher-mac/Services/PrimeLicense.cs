@@ -97,7 +97,7 @@ public static class PrimeLicense
     {
         Ownership.Owned => "Prime активирован на этом Mac. Перезапустите лаунчер, чтобы включились все возможности.",
         Ownership.NeedsLogin => "Войдите в свой аккаунт Dustore во вкладке «Магазин» и нажмите «Активировать Prime» снова.",
-        Ownership.NotOwned => "В этом аккаунте Dustore Prime не куплен. Купите DUSTORE LAUNCHER V Prime в магазине и повторите.",
+        Ownership.NotOwned => "В этом аккаунте Dustore Prime не куплен. Купите Prime в магазине Dustore и повторите.",
         Ownership.NotPublished => "Prime ещё не выставлен в магазине Dustore.",
         _ => "Нет связи с магазином Dustore. Проверьте интернет и повторите."
     };

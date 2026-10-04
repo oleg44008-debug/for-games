@@ -392,7 +392,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool IsFree => !Edition.IsPrimeBuild;
     /// <summary>A Prime build whose purchase is not confirmed on this Mac yet.</summary>
     public bool ShowPrimeActivation => Edition.IsPrimeBuild && !Edition.IsPrime;
-    public string PrimeActivationText { get; private set; } = "Prime работает, если он куплен в вашем аккаунте Dustore. Войдите в магазин и нажмите «Активировать».";
+    public string PrimeActivationText { get; private set; } = "Купили Prime в магазине Dustore? Войдите в магазине и нажмите «Активировать Prime».";
     public ICommand ActivatePrimeCommand => new RelayCommand(() =>
     {
         PrimeActivationText = "Спрашиваю магазин Dustore о покупке…";

@@ -24,7 +24,7 @@
                   },
                   {
                       "path":  "MainWindow.axaml",
-                      "sha256":  "c00aca857137639d6b7c5aa3da193129ad9b37ca05a3a138346dfd39b3b73ca7"
+                      "sha256":  "299b502d95e72f72264ace18411f2687fce097d0ecb2b493f0499b77f42b690d"
                   },
                   {
                       "path":  "MainWindow.axaml.cs",
@@ -104,7 +104,7 @@
                   },
                   {
                       "path":  "Services/Edition.cs",
-                      "sha256":  "d5d3c0b03fba21875d47b45939c0e2666893b8156373174b52ac0062c2092442"
+                      "sha256":  "6e9a8c999a6517d5c6a880a225fcccaa306475bcd7d2ba0c0ed3b63e81fa4989"
                   },
                   {
                       "path":  "Services/ExQuota.cs",
@@ -148,7 +148,7 @@
                   },
                   {
                       "path":  "Services/PrimeLicense.cs",
-                      "sha256":  "080f54ba064b2b453c89cb66de37c5d72e4c9ec61ecaa9df8f25dbdcbee40d14"
+                      "sha256":  "1e6bca044daff54681477549a9edb4c6114e6142d760b1dae7abe2d3b7b69682"
                   },
                   {
                       "path":  "Services/UiPreferences.cs",
@@ -176,8 +176,8 @@
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "80520d3906dcdf26c10b87bc806e1f55d15a87fc96470a655fd50b4b2c67b0f1"
+                      "sha256":  "42c291c6493d80295060fd0d758fe17067f1e8a3e6630ecc660a29d2f48600c6"
                   }
               ],
-    "workflowSha256":  "b8cc23d5987722871f9d79d3879be2e576554a183841e8783ddc003d0078d7a7"
+    "workflowSha256":  "6e5c6a469f6e3b1da3702f156e69b5bafd50b98725d3d128e7731fc6eaf26c40"
 }

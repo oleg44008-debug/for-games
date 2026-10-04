@@ -84,7 +84,9 @@
           <!-- Prime build, purchase not confirmed yet: activation by the store purchase. -->
           <Border Background="{DynamicResource AccentSubtle}" CornerRadius="12" Padding="12,10" IsVisible="{Binding ShowPrimeActivation}">
             <StackPanel Spacing="6">
-              <TextBlock FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Orchid}" Text="Prime не активирован" />
+              <TextBlock FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Orchid}" Text="DUSTORE Prime" />
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Text="ULTRA, eX без лимита и очереди, темы и свой лаунчер." />
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Text="{Binding FreeQuotaLine}" />
               <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Text="{Binding PrimeActivationText}" />
               <Button Classes="primary pill" Content="Активировать Prime" Command="{Binding ActivatePrimeCommand}" HorizontalAlignment="Stretch" />
             </StackPanel>
