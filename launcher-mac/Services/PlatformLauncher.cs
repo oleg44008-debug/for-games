@@ -12,13 +12,21 @@ public interface IPlatformLauncher
 
 public sealed class PlatformLauncher : IPlatformLauncher
 {
+    /// <summary>Environment entry that is not exported: it names the file for the game's stdout and stderr.</summary>
+    public const string GameLogKey = "__DUSTORE_GAME_LOG";
+
     public bool IsMacOS => OperatingSystem.IsMacOS();
 
     public Task OpenAppAsync(string appPath, IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment, CancellationToken cancellation = default)
     {
         if (!IsMacOS) throw new PlatformNotSupportedException("Запуск .app доступен на macOS.");
         var open = new List<string> { "-a", appPath };
-        foreach (var (key, value) in environment) { open.Add("--env"); open.Add(key + "=" + value); }
+        foreach (var (key, value) in environment)
+        {
+            // The game's own output goes to a log the launcher (and support) can read.
+            if (key == GameLogKey) { open.Add("--stdout"); open.Add(value); open.Add("--stderr"); open.Add(value); continue; }
+            open.Add("--env"); open.Add(key + "=" + value);
+        }
         if (arguments.Count > 0) { open.Add("--args"); open.AddRange(arguments); }
         return RunOpenAsync(open, cancellation);
     }

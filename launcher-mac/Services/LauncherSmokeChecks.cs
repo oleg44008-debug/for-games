@@ -28,8 +28,15 @@ public static class LauncherSmokeChecks
             Directory.CreateDirectory(fixtures);
             string emptyProfile = Path.Combine(fixtures, "empty-startup-profile");
             var emptyService = new LauncherServices(emptyProfile, fakePlatform);
-            var unityWindowed = GameLaunchOptions.Arguments(GameEngineKind.Unity, null, null, null);
-            Check(unityWindowed.SequenceEqual(new[] { "-screen-fullscreen", "0", "-window-mode", "windowed", "-screen-width", "1280", "-screen-height", "720" }), "Unity games open in a 1280x720 window by default instead of the display's full size");
+            UltraMode.Display = (1440, 900);
+            var unityDefault = GameLaunchOptions.Arguments(GameEngineKind.Unity, null, null, null);
+            Check(unityDefault.SequenceEqual(new[] { "-screen-fullscreen", "1", "-window-mode", "borderless", "-screen-width", "1440", "-screen-height", "900" }),
+                "Unity games open borderless fullscreen at the screen size in points by default (a Wine window stayed black on Intel)");
+            Check(GameLaunchOptions.Arguments(GameEngineKind.Unity, GameLaunchOptions.Windowed, null, null).Contains("windowed"), "the window mode stays available on request");
+            Check(GameLaunchOptions.WineGodotRenderer.Contains("opengl3") && GameLaunchOptions.WineGodotRenderer.Contains("gl_compatibility"),
+                "Godot under Wine starts on the OpenGL Compatibility renderer instead of Vulkan");
+            Check(!GameLaunchOptions.Environment(true, "/tmp").ContainsKey("DXVK_ASYNC") && GameLaunchOptions.Environment(true, "/tmp")["DXVK_LOG_PATH"] == "/tmp",
+                "Wine games log DXVK and no longer compile shaders asynchronously by default");
             Check(GameLaunchOptions.Arguments(GameEngineKind.Godot, GameLaunchOptions.Fullscreen, 1600, 900).SequenceEqual(new[] { "--fullscreen", "--resolution", "1600x900" }) && GameLaunchOptions.Arguments(GameEngineKind.Unity, GameLaunchOptions.GameDefault, 1600, 900).Count == 0, "Godot and game-default window options map to the right command line");
             if (!Edition.IsPrime)
             {

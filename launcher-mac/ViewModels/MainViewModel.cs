@@ -155,20 +155,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool SelectedCanStop => SelectedGame?.CanLaunch == true;
     public WindowChoice? SelectedWindowMode
     {
-        get => SelectedGame is null ? null : AllWindowModes.FirstOrDefault(m => m.Key == (SelectedGame.Entry.WindowMode ?? GameLaunchOptions.Windowed));
+        get => SelectedGame is null ? null : AllWindowModes.FirstOrDefault(m => m.Key == (SelectedGame.Entry.WindowMode ?? GameLaunchOptions.Fullscreen));
         set { if (value is not null) _ = SaveWindowOptionsAsync(value.Key, SelectedResolution); }
     }
     public ResolutionChoice? SelectedResolution
     {
         get => SelectedGame is null ? null : AllResolutions.FirstOrDefault(r => r.Width == (SelectedGame.Entry.WindowWidth ?? GameLaunchOptions.DefaultWidth)
             && r.Height == (SelectedGame.Entry.WindowHeight ?? GameLaunchOptions.DefaultHeight)) ?? AllResolutions[1];
-        set { if (value is not null) _ = SaveWindowOptionsAsync(SelectedWindowMode?.Key ?? GameLaunchOptions.Windowed, value); }
+        set { if (value is not null) _ = SaveWindowOptionsAsync(SelectedWindowMode?.Key ?? GameLaunchOptions.Fullscreen, value); }
     }
     public bool SelectedResolutionMatters => SelectedWindowMode?.Key != GameLaunchOptions.GameDefault;
     // ---- Prime per-game performance ----
     public bool SelectedIsWineGame => SelectedGame?.CanLaunch == true && WineRuntime.IsWineWrapper(SelectedGame.Entry.PreparedMacAppPath);
     public bool SelectedShowsPerformance => SelectedGame?.CanLaunch == true;
-    public IReadOnlyList<WindowChoice> GraphicsModes => AllGraphicsModes;
+    public IReadOnlyList<WindowChoice> GraphicsModes => UltraMode.AppleSilicon ? AllGraphicsModes : AllGraphicsModes.Take(1).ToArray();
     private static readonly IReadOnlyList<WindowChoice> AllGraphicsModes = new[]
     {
         new WindowChoice("Стандарт · DXVK", "standard"), new WindowChoice("Максимум · Metal", "metal")

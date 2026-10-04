@@ -163,7 +163,9 @@ public sealed class LauncherServices
         var arguments = ultra && engine != GameEngineKind.Other ? UltraMode.Arguments(engine)
             : GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
         bool wine = WineRuntime.IsWineWrapper(app);
-        if (wine && Edition.IsPrime && entry.GraphicsMode == "metal")
+        if (wine && engine == GameEngineKind.Godot) arguments = arguments.Concat(GameLaunchOptions.WineGodotRenderer).ToArray();
+        // DXMT draws black on Intel graphics: the Metal route is Apple-silicon only.
+        if (wine && Edition.IsPrime && entry.GraphicsMode == "metal" && UltraMode.AppleSilicon)
         {
             // Prime maximum performance: Direct3D straight to Metal on the CrossOver-based Wine.
             if (!PrimeGraphics.IsInstalled) throw new InvalidOperationException("Режим «Максимум» ещё не установлен.");
@@ -171,7 +173,10 @@ public sealed class LauncherServices
         }
         else
         {
-            var environment = new Dictionary<string, string>(GameLaunchOptions.Environment(wine));
+            string logs = OperatingSystem.IsMacOS() ? GameLaunchOptions.LogsDirectory() : Path.GetTempPath();
+            var environment = GameLaunchOptions.Environment(wine, logs);
+            string safe = string.Concat(entry.Name.Select(c => char.IsLetterOrDigit(c) ? c : '-'));
+            environment[PlatformLauncher.GameLogKey] = Path.Combine(logs, safe + ".log");
             if (Edition.IsPrime)
             {
                 if (entry.ShowFps) environment["MTL_HUD_ENABLED"] = "1";

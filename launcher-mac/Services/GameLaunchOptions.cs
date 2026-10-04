@@ -30,16 +30,47 @@ public static class GameLaunchOptions
                     return GameEngineKind.Unity;
                 if (name.EndsWith(".pck", StringComparison.OrdinalIgnoreCase)) return GameEngineKind.Godot;
             }
+            // Godot often embeds its .pck into the Windows exe: the file then ends with "GDPC".
+            if (Directory.Exists(wineGame))
+                foreach (string exe in Directory.EnumerateFiles(wineGame, "*.exe", SearchOption.TopDirectoryOnly))
+                    if (EndsWithGodotPack(exe)) return GameEngineKind.Godot;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
         return GameEngineKind.Other;
     }
 
+    private static bool EndsWithGodotPack(string exe)
+    {
+        try
+        {
+            using var stream = File.OpenRead(exe);
+            if (stream.Length < 16) return false;
+            stream.Seek(-4, SeekOrigin.End);
+            Span<byte> tail = stackalloc byte[4];
+            stream.ReadExactly(tail);
+            return tail.SequenceEqual("GDPC"u8);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    /// <summary>
+    /// Godot 4 under Wine on a Mac: its Vulkan renderer goes through MoltenVK, which on Intel
+    /// graphics cannot build Godot's compute pipelines (vkCreateComputePipelines error -3) and the
+    /// game shows a black screen. The Compatibility renderer (OpenGL) works there, so Wine Godot
+    /// games start with it.
+    /// </summary>
+    public static IReadOnlyList<string> WineGodotRenderer => new[] { "--rendering-driver", "opengl3", "--rendering-method", "gl_compatibility" };
+
+    /// <summary>
+    /// Default: borderless fullscreen at the screen's own size in points (1440×900, not the Retina
+    /// 2880×1800). A windowed Wine game stayed black on Intel Macs (5.2.9–5.3.3), fullscreen showed.
+    /// </summary>
     public static IReadOnlyList<string> Arguments(GameEngineKind engine, string? mode, int? width, int? height)
     {
-        mode ??= Windowed;
+        mode ??= Fullscreen;
         if (mode == GameDefault || engine == GameEngineKind.Other) return Array.Empty<string>();
-        int w = width ?? DefaultWidth, h = height ?? DefaultHeight;
+        bool screenSize = mode == Fullscreen && width is null;
+        int w = screenSize ? UltraMode.Display.Width : width ?? DefaultWidth, h = screenSize ? UltraMode.Display.Height : height ?? DefaultHeight;
         bool full = mode == Fullscreen;
         return engine switch
         {
@@ -51,10 +82,22 @@ public static class GameLaunchOptions
         };
     }
 
-    /// <summary>DXVK compiles shaders in the background instead of stalling the first frames.</summary>
-    public static IReadOnlyDictionary<string, string> Environment(bool wine) => wine
-        ? new Dictionary<string, string> { ["DXVK_ASYNC"] = "1" }
+    /// <summary>
+    /// Wine games: DXVK writes what device it created into the launcher's game logs, and MoltenVK
+    /// recovers a lost device instead of leaving a black window. (DXVK_ASYNC is gone: with this
+    /// DXVK build on Intel graphics it left frames empty.)
+    /// </summary>
+    public static Dictionary<string, string> Environment(bool wine, string logs) => wine
+        ? new Dictionary<string, string> { ["DXVK_LOG_LEVEL"] = "info", ["DXVK_LOG_PATH"] = logs, ["MVK_CONFIG_RESUME_LOST_DEVICE"] = "1" }
         : new Dictionary<string, string>();
+
+    /// <summary>~/Library/Logs/DUSTORE Launcher V/Games — one log per game, overwritten on each start.</summary>
+    public static string LogsDirectory()
+    {
+        string folder = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), "Library", "Logs", "DUSTORE Launcher V", "Games");
+        Directory.CreateDirectory(folder);
+        return folder;
+    }
 
     /// <summary>Stops a game even when it covers the screen and ignores Esc.</summary>
     public static async Task StopAsync(string app, CancellationToken cancellation)

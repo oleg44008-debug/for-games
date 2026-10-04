@@ -46,7 +46,9 @@ public static class UltraMode
         env["WINEMSYNC"] = "1";
         // macOS 15 Rosetta can advertise AVX/AVX2: games pick their vectorised code paths.
         env["ROSETTA_ADVERTISE_AVX"] = "1";
-        env["DXVK_ASYNC"] = "1";
+        // Background shader compilation only where it was seen to work (Apple silicon).
+        if (AppleSilicon) env["DXVK_ASYNC"] = "1";
+        env["MVK_CONFIG_RESUME_LOST_DEVICE"] = "1";
     }
 
     /// <summary>Standard route: DXVK over MoltenVK, no vsync, no anisotropic filtering, relaxed barriers.</summary>
@@ -68,7 +70,7 @@ public static class UltraMode
         env["DXVK_FRAME_RATE"] = "0";
         // MoltenVK: fast math in the generated Metal shaders, no waiting on each submit.
         env["MVK_CONFIG_FAST_MATH_ENABLED"] = "1";
-        env["MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS"] = "0";
+        if (AppleSilicon) env["MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS"] = "0";
     }
 
     /// <summary>Metal route (DXMT): MetalFX renders at half size and upscales; frames up to 120.</summary>
