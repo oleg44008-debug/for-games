@@ -19,6 +19,10 @@
                       "sha256":  "04f312e0a642ec0cf0ec68ef03000c4ac7dae285d4499c1c8ca469e52e4ef707"
                   },
                   {
+                      "path":  "fetch-release.py",
+                      "sha256":  "3ca459e1e707ea41c12b848fa03acea0fa4912b3eef5c96452e1400142f71de1"
+                  },
+                  {
                       "path":  "MainWindow.axaml",
                       "sha256":  "62a66d31fb2a85155cfe1493fe75a100e304d590a9c0b7de33a0294ee11a5d07"
                   },
@@ -64,7 +68,7 @@
                   },
                   {
                       "path":  "packaging/create_macos_dmg.py",
-                      "sha256":  "580a81279d439083e2df12492a4f302d778bc4af346519ef5a3ed49f43f7b631"
+                      "sha256":  "395f4067da6d0fe50c12c6385bf526f35d5a812f303b9a2881cc5f7a1dc1fab0"
                   },
                   {
                       "path":  "packaging/DustoreLauncherV.icns",

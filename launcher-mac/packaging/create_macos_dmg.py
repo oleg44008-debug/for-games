@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import platform
 import subprocess
+import time
 import uuid
 
 
@@ -25,8 +26,17 @@ def create_installer(bundle: Path, destination: Path, version: str) -> dict:
     subprocess.run(["ditto", "--rsrc", str(bundle), str(copied)], check=True, capture_output=True)
     subprocess.run(["codesign", "--verify", "--deep", "--strict", str(copied)], check=True, capture_output=True)
     (stage / "Applications").symlink_to("/Applications", target_is_directory=True)
-    subprocess.run(["hdiutil", "create", "-fs", "HFS+", "-format", "UDZO", "-volname",
-                    "DUSTORE Launcher V " + version, "-srcfolder", str(stage), str(destination)], check=True)
+    # GitHub's macOS runners intermittently answer "create failed - Resource busy" while a
+    # scanner still holds the fresh staging folder; the same command succeeds moments later.
+    for attempt in range(1, 6):
+        created = subprocess.run(["hdiutil", "create", "-fs", "HFS+", "-format", "UDZO", "-volname",
+                                  "DUSTORE Launcher V " + version, "-srcfolder", str(stage), str(destination)])
+        if created.returncode == 0:
+            break
+        if attempt == 5:
+            raise subprocess.CalledProcessError(created.returncode, created.args)
+        destination.unlink(missing_ok=True)
+        time.sleep(10 * attempt)
     subprocess.run(["hdiutil", "verify", str(destination)], check=True, capture_output=True)
     with destination.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
