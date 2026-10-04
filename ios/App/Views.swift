@@ -57,7 +57,21 @@ struct YellowButton: View {
 }
 
 struct EditionMark: View {
-    var body: some View { Chip(text: Edition.name, color: Edition.isPrime ? Theme.pink : Theme.dim) }
+    @State private var asking = false
+    @State private var answer: String?
+    var body: some View {
+        if Edition.isPrimeBuild && !Edition.isPrime {
+            Button { Task { asking = true; answer = PrimeLicense.explain(await PrimeLicense.activate()); asking = false } } label: {
+                Chip(text: asking ? "Проверяю покупку…" : "Prime · активировать", color: Theme.pink)
+            }
+            .buttonStyle(.plain)
+            .alert("DustoreX Prime", isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } })) {
+                Button("Понятно", role: .cancel) {}
+            } message: { Text(answer ?? "") }
+        } else {
+            Chip(text: Edition.name, color: Edition.isPrime ? Theme.pink : Theme.dim)
+        }
+    }
 }
 
 struct RootView: View {

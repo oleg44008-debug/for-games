@@ -10,6 +10,9 @@ namespace DustoreLauncherV.Mac.Services;
 internal static unsafe partial class WebKitBridge
 {
     private const nint PolicyCancel = 0, PolicyAllow = 1, PolicyDownload = 2;
+    /// <summary>Set while the launcher asks the store whether Prime is bought.</summary>
+    public static bool PrimeProbeRunning;
+    public static bool PrimeProbeOwned;
     private static readonly string[] GameExtensions = { ".zip", ".dmg", ".pck", ".love", ".exe", ".apk", ".7z", ".rar", ".gz", ".tgz", ".pkg" };
 
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] private static extern byte SendBool(IntPtr target, IntPtr selector, IntPtr argument);
@@ -95,7 +98,12 @@ internal static unsafe partial class WebKitBridge
                 disposition = ManagedString(Send(response, Sel("valueForHTTPHeaderField:"), NSString("Content-Disposition"))) ?? "";
             bool gameFile = GameExtensions.Any(e => fileName.EndsWith(e, StringComparison.OrdinalIgnoreCase)
                 || Uri.TryCreate(url, UriKind.Absolute, out var parsed) && parsed.AbsolutePath.EndsWith(e, StringComparison.OrdinalIgnoreCase));
-            if (!canShow || disposition.StartsWith("attachment", StringComparison.OrdinalIgnoreCase) || gameFile)
+            if (PrimeProbeRunning && PrimeLicense.IsPrimeFile(url))
+            {
+                PrimeProbeOwned = true;
+                policy = PolicyCancel;
+            }
+            else if (!canShow || disposition.StartsWith("attachment", StringComparison.OrdinalIgnoreCase) || gameFile)
             {
                 // The store page title names the game; the S3 file name is only a build hash.
                 _pendingTitle = ManagedString(Send(webView, Sel("title"))) ?? "";

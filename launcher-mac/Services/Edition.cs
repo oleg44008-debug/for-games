@@ -4,10 +4,12 @@ namespace DustoreLauncherV.Mac.Services;
 public static class Edition
 {
 #if PRIME
-    public static readonly bool IsPrime = true;
+    public static readonly bool IsPrimeBuild = true;
 #else
-    public static readonly bool IsPrime = false;
+    public static readonly bool IsPrimeBuild = false;
 #endif
+    /// <summary>A Prime build whose purchase the Dustore store confirmed on this Mac.</summary>
+    public static bool IsPrime => IsPrimeBuild && PrimeLicense.IsActive;
     public static string Name => IsPrime ? "Prime" : "Free";
 
     /// <summary>Free converts at a capped pace; Prime has no limit.</summary>

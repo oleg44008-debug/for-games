@@ -63,6 +63,7 @@ public partial class MainWindow : Window
             ShowWebSection();
         }
         // ULTRA: the launcher goes to the Dock so the game gets the GPU it was drawing with.
+        ViewModel.PrimeActivateRequested += async (_, _) => ViewModel.PrimeActivationDone(await ProbePrimeAsync());
         ViewModel.YieldToGameRequested += (_, _) => Dispatcher.UIThread.Post(() => WindowState = WindowState.Minimized);
         ViewModel.CoverPickRequested += async (_, _) =>
         {
@@ -89,6 +90,40 @@ public partial class MainWindow : Window
         if (_webSectionShown == ViewModel.Section) return;
         _webSectionShown = ViewModel.Section;
         _web.Navigate(ViewModel.WebStartUrl);
+        // Monthly re-check of a Prime purchase, when the buyer is in the store anyway.
+        if (ViewModel.Section == "store" && Edition.IsPrimeBuild && PrimeLicense.IsActive && PrimeLicense.NeedsRecheck)
+            _ = Task.Delay(8000).ContinueWith(_ => Avalonia.Threading.Dispatcher.UIThread.Post(async () => PrimeLicense.Accept(await ProbePrimeAsync())));
+    }
+
+    /// <summary>
+    /// Opens the Prime product's download link in the store view as the signed-in buyer: the file
+    /// (bought; the download is cancelled at once) or the payment / sign-in page (not bought).
+    /// </summary>
+    private async Task<PrimeLicense.Ownership> ProbePrimeAsync()
+    {
+        if (PrimeLicense.ProductId <= 0) return PrimeLicense.Ownership.NotPublished;
+        if (_web is null) return PrimeLicense.Ownership.Offline;
+        ViewModel.Section = "store";
+        WebKitBridge.PrimeProbeOwned = false;
+        WebKitBridge.PrimeProbeRunning = true;
+        try
+        {
+            _web.Navigate(PrimeLicense.DownloadUrl);
+            for (int i = 0; i < 60; i++)
+            {
+                await Task.Delay(500);
+                if (WebKitBridge.PrimeProbeOwned) return PrimeLicense.Ownership.Owned;
+                if (i > 4 && !_web.State.IsLoading) break;
+            }
+            if (WebKitBridge.PrimeProbeOwned) return PrimeLicense.Ownership.Owned;
+            if (_web.State.Error is not null) return PrimeLicense.Ownership.Offline;
+            return _web.State.Url.Contains("login", StringComparison.OrdinalIgnoreCase) ? PrimeLicense.Ownership.NeedsLogin : PrimeLicense.Ownership.NotOwned;
+        }
+        finally
+        {
+            WebKitBridge.PrimeProbeRunning = false;
+            if (WebKitBridge.PrimeProbeOwned) _web.Navigate(ViewModel.WebStartUrl);
+        }
     }
 
     private void PushWebState()

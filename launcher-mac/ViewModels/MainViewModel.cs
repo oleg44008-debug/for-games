@@ -389,7 +389,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     // ---- Edition and appearance (themes, accents and sections are Prime) ----
     public bool IsPrime => Edition.IsPrime;
-    public bool IsFree => !Edition.IsPrime;
+    public bool IsFree => !Edition.IsPrimeBuild;
+    /// <summary>A Prime build whose purchase is not confirmed on this Mac yet.</summary>
+    public bool ShowPrimeActivation => Edition.IsPrimeBuild && !Edition.IsPrime;
+    public string PrimeActivationText { get; private set; } = "Prime работает, если он куплен в вашем аккаунте Dustore. Войдите в магазин и нажмите «Активировать».";
+    public ICommand ActivatePrimeCommand => new RelayCommand(() =>
+    {
+        PrimeActivationText = "Спрашиваю магазин Dustore о покупке…";
+        Notify(nameof(PrimeActivationText));
+        PrimeActivateRequested?.Invoke(this, EventArgs.Empty);
+    }, () => Edition.IsPrimeBuild);
+    /// <summary>The window runs the check in its store view and reports back.</summary>
+    public event EventHandler? PrimeActivateRequested;
+
+    public void PrimeActivationDone(PrimeLicense.Ownership answer)
+    {
+        PrimeLicense.Accept(answer);
+        PrimeActivationText = PrimeLicense.Explain(answer);
+        Status = PrimeActivationText;
+        foreach (string property in new[] { nameof(PrimeActivationText), nameof(ShowPrimeActivation), nameof(IsPrime) }) Notify(property);
+    }
     public string EditionLabel => Edition.IsPrime ? "Prime" : "Free";
     public IReadOnlyList<ThemeChoice> ThemeChoices => UiPreferences.Themes;
     public IReadOnlyList<AccentChoice> AccentChoices => UiPreferences.Accents;

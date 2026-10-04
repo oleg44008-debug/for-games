@@ -81,6 +81,14 @@
             </StackPanel>
           </Button>
           <!-- Free: a quiet note of what Prime adds; no pop-ups. -->
+          <!-- Prime build, purchase not confirmed yet: activation by the store purchase. -->
+          <Border Background="{DynamicResource AccentSubtle}" CornerRadius="12" Padding="12,10" IsVisible="{Binding ShowPrimeActivation}">
+            <StackPanel Spacing="6">
+              <TextBlock FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Orchid}" Text="Prime не активирован" />
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Text="{Binding PrimeActivationText}" />
+              <Button Classes="primary pill" Content="Активировать Prime" Command="{Binding ActivatePrimeCommand}" HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </Border>
           <Border Background="{DynamicResource AccentSubtle}" CornerRadius="12" Padding="12,10" IsVisible="{Binding IsFree}">
             <StackPanel Spacing="3">
               <TextBlock FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Orchid}" Text="DUSTORE Prime" />

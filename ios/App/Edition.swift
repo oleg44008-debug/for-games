@@ -5,10 +5,12 @@ import Security
 /// Free or Prime — fixed at build time (SWIFT_ACTIVE_COMPILATION_CONDITIONS=PRIME).
 enum Edition {
 #if PRIME
-    static let isPrime = true
+    static let isPrimeBuild = true
 #else
-    static let isPrime = false
+    static let isPrimeBuild = false
 #endif
+    /// A Prime build whose purchase the Dustore store confirmed on this device.
+    static var isPrime: Bool { isPrimeBuild && PrimeLicense.isActive }
     static var name: String { isPrime ? "Prime" : "Free" }
     static let freePerDay = 3
     static let freeQueueSeconds = 15

@@ -1,6 +1,6 @@
 ﻿{
     "product":  "DUSTORE LAUNCHER V macOS",
-    "version":  "5.3.6",
+    "version":  "5.3.7",
     "files":  [
                   {
                       "path":  "App.axaml",
@@ -16,7 +16,7 @@
                   },
                   {
                       "path":  "DustoreLauncherV.Mac.csproj",
-                      "sha256":  "964c9e7fe5b2235a848ec250c86f1dd54808c6b5a4a62ec74c751b24804fb73f"
+                      "sha256":  "b2a628bc334b91985b8b559217e9c9791368d344752c3b59514d7078842e8db8"
                   },
                   {
                       "path":  "fetch-release.py",
@@ -24,11 +24,11 @@
                   },
                   {
                       "path":  "MainWindow.axaml",
-                      "sha256":  "5c394f8293a03d2b9aee11b132c1bd2d72cf66bb67eddf01027eeeb49023ba1a"
+                      "sha256":  "c00aca857137639d6b7c5aa3da193129ad9b37ca05a3a138346dfd39b3b73ca7"
                   },
                   {
                       "path":  "MainWindow.axaml.cs",
-                      "sha256":  "18f9c22c269626164861a29243b712a202066510bda7561aab3719fae0bc54ee"
+                      "sha256":  "da3124f6075d13c2323d78b41b4d709d834d7a6729434bec20422caf541fa79d"
                   },
                   {
                       "path":  "prepare-ci.ps1",
@@ -104,7 +104,7 @@
                   },
                   {
                       "path":  "Services/Edition.cs",
-                      "sha256":  "f213d918640c5c00ba6f7639d600f24ff2a474fa11e4a6d3be753927d315256d"
+                      "sha256":  "d5d3c0b03fba21875d47b45939c0e2666893b8156373174b52ac0062c2092442"
                   },
                   {
                       "path":  "Services/ExQuota.cs",
@@ -147,6 +147,10 @@
                       "sha256":  "12c565102272f188b1efcb282d0e33758be2422503d4ab88618c90ebe335308c"
                   },
                   {
+                      "path":  "Services/PrimeLicense.cs",
+                      "sha256":  "080f54ba064b2b453c89cb66de37c5d72e4c9ec61ecaa9df8f25dbdcbee40d14"
+                  },
+                  {
                       "path":  "Services/UiPreferences.cs",
                       "sha256":  "d294055df76eb6e2f5f51c911c8d6469fa7ea72a972a2461e9fde7d0bd1b77d2"
                   },
@@ -156,15 +160,15 @@
                   },
                   {
                       "path":  "Services/WebKitBridge.cs",
-                      "sha256":  "61778658830f10ce9a91bd50c1a87a920c96a1ffc71c0e3964fa1545e3993fe4"
+                      "sha256":  "417855641ebe927d30d8131b3d20d517da82ce54710d3f21b17f498f8d54cb9d"
                   },
                   {
                       "path":  "Services/WebKitDownloads.cs",
-                      "sha256":  "ca3542442a824ba076045b0f4c6e0ec1bb98c906e4b9ed82163a0f2ae090c7f0"
+                      "sha256":  "5dd637df563a2dd8640d1e31e154a7f44d58dfbd4bc7730f457c0abbd734017d"
                   },
                   {
                       "path":  "Services/WineRuntime.cs",
-                      "sha256":  "cf8e0eeea4de14ac24a81f5e83b8d518418a6bda7ef0f411c572c9880ad6274c"
+                      "sha256":  "19d06cd8069b9a438bd94ce9bb610e0a3e024bc27ac4a945842551e42ae86282"
                   },
                   {
                       "path":  "Services/WineSmoke.cs",
@@ -172,7 +176,7 @@
                   },
                   {
                       "path":  "ViewModels/MainViewModel.cs",
-                      "sha256":  "e98b4b667d3211ea3e623f959f65d10d147a6077419da76c8fea8519ee642459"
+                      "sha256":  "80520d3906dcdf26c10b87bc806e1f55d15a87fc96470a655fd50b4b2c67b0f1"
                   }
               ],
     "workflowSha256":  "b8cc23d5987722871f9d79d3879be2e576554a183841e8783ddc003d0078d7a7"

@@ -21,6 +21,7 @@ final class Library: ObservableObject {
         }
         refreshQuota()
         Task { await TrustedClock.sync(); refreshQuota() }
+        Task { await PrimeLicense.recheckIfDue() }
     }
 
     func refreshQuota() {
