@@ -99,8 +99,7 @@ jobs:
               await page.mouse.click(640, 360)
               await page.wait_for_timeout(20000)
               await page.screenshot(path=f"out/shots/{name}-35s.png")
-              open(f"out/shots/{name}-console.txt", "w").write("
-".join(logs[:120]))
+              open(f"out/shots/{name}-console.txt", "w").write(chr(10).join(logs[:120]))
               await b.close()
           async def main():
               async with async_playwright() as p:
