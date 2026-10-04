@@ -1,7 +1,7 @@
 """Print the Mac launcher workflow runs for a commit, using the existing Git credential.
 
 The credential goes only to api.github.com and is never printed.
-Usage: python ci-status.py <commit-sha> [--jobs] [--artifacts]
+Usage: python ci-status.py <commit-sha> [--jobs] [--artifacts] [--evidence <file>]
 """
 import json
 import os
@@ -41,6 +41,15 @@ def main():
                 failed = [s["name"] for s in job.get("steps", []) if s.get("conclusion") == "failure"]
                 print("   job", json.dumps({"id": job["id"], "name": job["name"], "status": job["status"],
                                             "conclusion": job["conclusion"], "failedSteps": failed}, ensure_ascii=False))
+        if "--evidence" in sys.argv and run["name"] == "DUSTORE Launcher V macOS app":
+            target = sys.argv[sys.argv.index("--evidence") + 1]
+            evidence = {"run": {"id": run["id"], "conclusion": run["conclusion"], "status": run["status"], "head_sha": run["head_sha"]},
+                        "artifacts": [{"id": x["id"], "name": x["name"], "digest": x.get("digest"), "head_sha": x["workflow_run"]["head_sha"]}
+                                      for x in api(f"/actions/runs/{run['id']}/artifacts", secret)["artifacts"]],
+                        "jobs": [{"id": j["id"], "name": j["name"], "status": j["status"], "conclusion": j["conclusion"]}
+                                 for j in api(f"/actions/runs/{run['id']}/jobs", secret)["jobs"]]}
+            with open(target, "w", encoding="utf-8") as stream:
+                json.dump(evidence, stream, ensure_ascii=False, indent=2)
         if "--artifacts" in sys.argv:
             for artifact in api(f"/actions/runs/{run['id']}/artifacts", secret)["artifacts"]:
                 print("   artifact", json.dumps({"id": artifact["id"], "name": artifact["name"], "digest": artifact.get("digest"),

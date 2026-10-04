@@ -718,6 +718,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task ConvertAsync()
     {
         if (!CanConvert || _plan is null) return;
+        if (ExDailyQuota.Refusal(DataDirectory) is { } quota) { Status = quota; return; }
         await PerformAsync("Создаю пакет…", async ct =>
         {
             var request = new ConversionRequest(SourcePath, SelectedTarget.Platform, GameName.Trim(), OutputPath,
@@ -726,6 +727,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var started = System.Diagnostics.Stopwatch.StartNew();
             var result = await _services.ConvertAsync(request, new Progress<string>(AppendLog), ct);
             await HoldFreeExPaceAsync(request.InputPath, started, ct);
+            ExDailyQuota.RecordSuccess(DataDirectory);
             ResultPath = result.OutputPath;
             foreach (string warning in result.Warnings) AppendLog(warning);
             if (request.Target == TargetPlatform.MacOS)
@@ -734,10 +736,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 original ??= await _services.AddGameAsync(request.InputPath, CancellationToken.None);
                 var ready = await _services.PrepareConvertedMacAsync(original.Id, result, CancellationToken.None);
                 await ReloadLibraryAsync(CancellationToken.None, ready.Id);
-                Status = "macOS-пакет готов. Игра добавлена в библиотеку для запуска.";
+                Status = "macOS-пакет готов. Игра добавлена в библиотеку для запуска." + ExDailyQuota.Remaining(DataDirectory);
                 if (_plan.Method == "wine" && !WineRuntime.IsInstalled) _ = EnsureWineAsync();
             }
-            else Status = "Windows-пакет готов. Откройте ZIP на Windows для проверки запуска.";
+            else Status = "Windows-пакет готов. Откройте ZIP на Windows для проверки запуска." + ExDailyQuota.Remaining(DataDirectory);
         });
     }
 

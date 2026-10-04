@@ -85,7 +85,7 @@
             <StackPanel Spacing="3">
               <TextBlock FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Orchid}" Text="DUSTORE Prime" />
               <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"
-                         Text="Максимум FPS через Metal, eX без ограничений, темы и свой лаунчер." />
+                         Text="Максимум FPS через Metal, eX без лимита (во Free — 3 переноса в день и 4 МБ/с), темы и свой лаунчер." />
             </StackPanel>
           </Border>
           <Border Background="{DynamicResource Fill}" CornerRadius="10" Padding="12,9" IsVisible="{Binding IsPrime}">
