@@ -63,7 +63,13 @@ enum SelfTest {
     nonisolated static func gameReported(_ text: String) {
         guard ProcessInfo.processInfo.arguments.contains("-dustoreSelfTest") else { return }
         Task { @MainActor in
-            report["game"] = text
+            if text.hasPrefix("log: ") {
+                var log = report["engineLog"] as? [String] ?? []
+                log.append(String(text.dropFirst(5)))
+                report["engineLog"] = log
+            } else {
+                report["game"] = text
+            }
             write()
         }
     }

@@ -57,9 +57,10 @@ jobs:
             sleep 5
             if [ -f "$DATA/Documents/selftest.json" ] && grep -q '"game"\|"error"' "$DATA/Documents/selftest.json"; then break; fi
           done
-          sleep 20
           mkdir -p out/shots
-          xcrun simctl io "$UDID" screenshot out/shots/game.png
+          sleep 15; xcrun simctl io "$UDID" screenshot out/shots/game-15s.png
+          sleep 25; xcrun simctl io "$UDID" screenshot out/shots/game-40s.png
+          sleep 30; xcrun simctl io "$UDID" screenshot out/shots/game-70s.png
           cp "$DATA/Documents/selftest.json" out/selftest.json || true
           cat out/selftest.json || true
           xcrun simctl terminate "$UDID" ru.dustore.launcher.ios || true

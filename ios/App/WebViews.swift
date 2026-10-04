@@ -89,7 +89,8 @@ struct GameWebView: UIViewRepresentable {
         view.isOpaque = true
         view.backgroundColor = .black
         if #available(iOS 16.4, *) { view.isInspectable = true }
-        if let url = URL(string: "\(GameServer.scheme)://game/index.html") { view.load(URLRequest(url: url)) }
+        let query = ProcessInfo.processInfo.arguments.contains("-dustoreSelfTest") ? "?selftest" : ""
+        if let url = URL(string: "\(GameServer.scheme)://game/index.html" + query) { view.load(URLRequest(url: url)) }
         return view
     }
 

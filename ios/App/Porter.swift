@@ -171,6 +171,13 @@ enum Porter {
         <script src="index.js"></script>
         <script>
         function exReport(m){try{window.webkit.messageHandlers.ex.postMessage(m)}catch(e){}}
+        (function(){let n=0;for(const k of ['log','warn','error']){const o=console[k].bind(console);console[k]=function(...a){if(n++<80)exReport('log: '+a.join(' '));o(...a)}}})();
+        window.addEventListener('error',e=>exReport('log: page error '+e.message));
+        if (location.search.indexOf('selftest') >= 0) setTimeout(function(){
+          const c=document.getElementById('canvas'), r=c.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+          for (const t of ['pointerdown','mousedown','pointerup','mouseup','click']) c.dispatchEvent(new (t.startsWith('pointer')?PointerEvent:MouseEvent)(t,{bubbles:true,clientX:x,clientY:y,button:0,buttons:t.endsWith('down')?1:0,pointerType:'mouse'}));
+          exReport('log: selftest tapped the canvas');
+        }, 30000);
         const engine = new Engine({ executable: 'index', mainPack: 'index.pck', canvasResizePolicy: 2, args: [], focusCanvas: true, ensureCrossOriginIsolationHeaders: false, experimentalVK: false, gdextensionLibs: [] });
         engine.startGame({ onProgress: (cur, total) => { if (total > 0) document.getElementById('ex-status').textContent = 'eX загружает игру… ' + Math.round(cur * 100 / total) + '%'; } })
           .then(() => { const s = document.getElementById('ex-status'); if (s) s.remove(); exReport('started'); })
