@@ -83,7 +83,8 @@ jobs:
           DATA=$(xcrun simctl get_app_container "$UDID" ru.dustore.launcher.ios data)
           WEB=$(dirname "$(find "$DATA/Documents/Games" -name index.wasm | head -1)")
           echo "web build: $WEB"; ls -la "$WEB"
-          (cd "$WEB" && python3 -m http.server 8765 >/dev/null 2>&1 &)
+          (cd "$WEB" && nohup python3 -m http.server 8765 >/dev/null 2>&1 &)
+          sleep 3; curl -sI http://127.0.0.1:8765/index.html | head -3
           python3 -m venv "$RUNNER_TEMP/pw" && "$RUNNER_TEMP/pw/bin/pip" install --quiet playwright && "$RUNNER_TEMP/pw/bin/python" -m playwright install webkit chromium >/dev/null
           "$RUNNER_TEMP/pw/bin/python" - <<'EOF'
           import asyncio
@@ -93,8 +94,8 @@ jobs:
               page = await b.new_page(viewport={"width": 1280, "height": 720})
               logs = []
               page.on("console", lambda m: logs.append(m.text))
-              await page.goto("http://127.0.0.1:8765/index.html")
-              await page.wait_for_timeout(15000)
+              await page.goto("http://127.0.0.1:8765/index.html", wait_until="commit", timeout=120000)
+              await page.wait_for_timeout(30000)
               await page.screenshot(path=f"out/shots/{name}-15s.png")
               await page.mouse.click(640, 360)
               await page.wait_for_timeout(20000)
