@@ -3,13 +3,16 @@ using System.Runtime.InteropServices;
 namespace DustoreLauncherV.Mac.Services;
 
 /// <summary>
-/// Prime ULTRA: everything that buys frames, switched on together for one game.
+/// Prime ULTRA: more frames without touching the picture. The game keeps its resolution,
+/// textures, filtering and effects; ULTRA removes what stands between the game and the Mac:
 ///
-/// The big levers are the number of pixels and the frame cap. The game renders fewer pixels
-/// (MetalFX upscales them back on Apple silicon; on Intel the game simply runs at ¾ of the
-/// screen), vertical sync stops capping it at the display's 60 Hz, and the translation layers
-/// drop the safety work that costs frames. The smaller levers: Rosetta exposes AVX to the game,
-/// Wine stops logging, shaders compile in the background, the launcher yields the CPU and GPU.
+///  • the shortest graphics path: on Apple silicon Direct3D 11 goes straight to Metal (DXMT on
+///    the CrossOver-based Wine), on Intel through DXVK — the fastest route that draws there;
+///  • no frame cap: vertical sync and DXVK's limiter no longer hold the game at 60 FPS;
+///  • persistent shader caches: a second start, and every level after the first visit, no
+///    longer stutters while shaders compile; all CPU cores compile them;
+///  • Wine's debug output off; Rosetta exposes AVX/AVX2 so games pick their vector code;
+///  • the Mac does not nap or sleep while the game runs, and the launcher steps aside.
 /// </summary>
 public static class UltraMode
 {
@@ -18,24 +21,22 @@ public static class UltraMode
 
     public static bool AppleSilicon => RuntimeInformation.OSArchitecture == Architecture.Arm64;
 
-    /// <summary>Render size for engines that take it on the command line: ¾ of the screen, even numbers.</summary>
-    public static (int Width, int Height) RenderSize()
-    {
-        double scale = AppleSilicon ? 0.85 : 0.75;
-        int w = (int)(Display.Width * scale) / 2 * 2, h = (int)(Display.Height * scale) / 2 * 2;
-        return (Math.Max(640, w), Math.Max(360, h));
-    }
+    /// <summary>On Apple silicon ULTRA runs Windows games on the Metal route (DXMT).</summary>
+    public static bool UsesMetal => AppleSilicon;
 
-    public static IReadOnlyList<string> Arguments(GameEngineKind engine)
+    /// <summary>Engine arguments: only the frame cap is lifted; resolution and quality stay the game's.</summary>
+    public static IReadOnlyList<string> Arguments(GameEngineKind engine) => engine switch
     {
-        var (w, h) = RenderSize();
-        return engine switch
-        {
-            // Fullscreen at a lower resolution: macOS scales the picture up for free.
-            GameEngineKind.Unity => new[] { "-screen-fullscreen", "1", "-window-mode", "borderless", "-screen-width", w.ToString(), "-screen-height", h.ToString(), "-nolog" },
-            GameEngineKind.Godot => new[] { "--fullscreen", "--resolution", $"{w}x{h}", "--disable-vsync" },
-            _ => Array.Empty<string>()
-        };
+        GameEngineKind.Godot => new[] { "--disable-vsync" },
+        _ => Array.Empty<string>()
+    };
+
+    private static string CacheDirectory(string kind)
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string folder = OperatingSystem.IsMacOS() ? Path.Combine(home, "Library", "Caches", "DUSTORE Launcher V", kind) : Path.Combine(Path.GetTempPath(), "dustore-" + kind);
+        Directory.CreateDirectory(folder);
+        return folder;
     }
 
     /// <summary>Shared by both graphics routes.</summary>
@@ -46,42 +47,34 @@ public static class UltraMode
         env["WINEMSYNC"] = "1";
         // macOS 15 Rosetta can advertise AVX/AVX2: games pick their vectorised code paths.
         env["ROSETTA_ADVERTISE_AVX"] = "1";
-        // Background shader compilation only where it was seen to work (Apple silicon).
-        if (AppleSilicon) env["DXVK_ASYNC"] = "1";
         env["MVK_CONFIG_RESUME_LOST_DEVICE"] = "1";
     }
 
-    /// <summary>Standard route: DXVK over MoltenVK, no vsync, no anisotropic filtering, relaxed barriers.</summary>
+    /// <summary>DXVK route: uncapped, every core compiling shaders, a persistent pipeline cache. Image quality untouched.</summary>
     public static void AddDxvk(IDictionary<string, string> env, string dataDirectory)
     {
         AddCommon(env);
         string config = Path.Combine(dataDirectory, "dxvk-ultra.conf");
         File.WriteAllText(config, string.Join("\n",
-            "# DUSTORE Prime ULTRA",
+            "# DUSTORE Prime ULTRA: frames without touching the picture",
             "dxgi.syncInterval = 0",
             "dxgi.maxFrameRate = 0",
             "d3d9.presentInterval = 0",
-            "d3d11.samplerAnisotropy = 0",
-            "d3d9.samplerAnisotropy = 0",
-            "d3d11.relaxedBarriers = True",
+            "d3d9.maxFrameRate = 0",
             "dxvk.numCompilerThreads = 0",
-            "") );
+            ""));
         env["DXVK_CONFIG_FILE"] = config;
         env["DXVK_FRAME_RATE"] = "0";
-        // MoltenVK: fast math in the generated Metal shaders, no waiting on each submit.
-        env["MVK_CONFIG_FAST_MATH_ENABLED"] = "1";
+        env["DXVK_STATE_CACHE"] = "1";
+        env["DXVK_STATE_CACHE_PATH"] = CacheDirectory("dxvk");
         if (AppleSilicon) env["MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS"] = "0";
     }
 
-    /// <summary>Metal route (DXMT): MetalFX renders at half size and upscales; frames up to 120.</summary>
+    /// <summary>Metal route (DXMT): native resolution, no upscaling, frames up to the display's maximum.</summary>
     public static void AddMetal(IDictionary<string, string> env, List<string> dxmtConfig)
     {
         AddCommon(env);
-        if (AppleSilicon)
-        {
-            env["DXMT_METALFX_SPATIAL_SWAPCHAIN"] = "1";
-            dxmtConfig.Add("d3d11.metalSpatialUpscaleFactor=2.0");
-        }
+        env["DXMT_SHADER_CACHE_PATH"] = CacheDirectory("dxmt");
         dxmtConfig.Add("d3d11.preferredMaxFrameRate=120");
     }
 }

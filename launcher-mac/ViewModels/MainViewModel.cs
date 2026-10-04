@@ -171,7 +171,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public IReadOnlyList<WindowChoice> GraphicsModes => UltraMode.AppleSilicon ? AllGraphicsModes : AllGraphicsModes.Take(1).ToArray();
     private static readonly IReadOnlyList<WindowChoice> AllGraphicsModes = new[]
     {
-        new WindowChoice("Стандарт · DXVK", "standard"), new WindowChoice("Максимум · Metal", "metal")
+        new WindowChoice("Стандарт · DXVK", "standard"), new WindowChoice("ULTRA · Metal", "metal")
     };
     public IReadOnlyList<WindowChoice> FpsLimits => AllFpsLimits;
     private static readonly IReadOnlyList<WindowChoice> AllFpsLimits = new[]
@@ -202,17 +202,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task SaveUltraAsync(bool ultra)
     {
         if (SelectedGame is null || !Edition.IsPrime) return;
-        try { await ReplaceEntryAsync(await _services.SetUltraAsync(SelectedGame.Entry.Id, ultra)); }
+        try
+        {
+            if (ultra && UltraMode.UsesMetal && !PrimeGraphics.IsInstalled)
+            {
+                Status = "Устанавливаю ULTRA: Wine на основе CrossOver и Direct3D→Metal (один раз, около 260 МБ)…";
+                await PrimeGraphics.InstallAsync(new Progress<WineProgress>(p => Status = p.Stage + (p.Fraction < 1 ? $" {p.Fraction * 100:0}%" : "")));
+                Status = "ULTRA установлен.";
+            }
+            await ReplaceEntryAsync(await _services.SetUltraAsync(SelectedGame.Entry.Id, ultra));
+        }
         catch (Exception error) { ReportError(error); }
         foreach (string property in new[] { nameof(SelectedUltra), nameof(PerformanceNote) }) Notify(property);
     }
     public string PerformanceNote => !Edition.IsPrime
-        ? "ULTRA, режим «Максимум» (Direct3D прямо в Metal + апскейлинг MetalFX), счётчик и ограничение FPS — в Prime."
-        : SelectedUltra ? (UltraMode.AppleSilicon
-            ? "ULTRA: игра рисует вдвое меньше пикселей, MetalFX возвращает чёткость; без вертикальной синхронизации и до 120 кадров. Лаунчер уходит в Dock. Картинка может стать мягче, возможны разрывы кадра."
-            : "ULTRA: игра идёт на ¾ разрешения экрана, без вертикальной синхронизации и без анизотропной фильтрации; лаунчер уходит в Dock. На встроенной графике Intel это главный прирост кадров.")
-        : SelectedMetalMode ? "Максимум: Direct3D идёт прямо в Metal (DXMT), без промежуточного Vulkan. Если игра не запускается — верните «Стандарт»."
-        : "Стандарт: DXVK через MoltenVK. Для большего FPS выберите «Максимум».";
+        ? "ULTRA — больше кадров без понижения графики, счётчик и ограничение FPS — в Prime."
+        : SelectedUltra ? (UltraMode.UsesMetal
+            ? "ULTRA: Direct3D идёт прямо в Metal, без ограничителя кадров, шейдеры кэшируются навсегда; разрешение и качество — как в игре. Лаунчер уходит в Dock."
+            : "ULTRA: самый быстрый путь графики на Intel (DXVK), без ограничителя кадров, постоянный кэш шейдеров на всех ядрах; разрешение и качество — как в игре. Лаунчер уходит в Dock.")
+        : "Включите ULTRA, чтобы отдать игре всё: без ограничителя кадров, с кэшем шейдеров и самым коротким путём до видеокарты.";
     public ICommand PickCoverCommand => new RelayCommand(() => CoverPickRequested?.Invoke(this, EventArgs.Empty), () => Edition.IsPrime);
     public event EventHandler? CoverPickRequested;
 
@@ -238,9 +246,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             if (mode == "metal" && !PrimeGraphics.IsInstalled)
             {
-                Status = "Устанавливаю режим «Максимум»: Wine на основе CrossOver и DXMT (один раз, около 260 МБ)…";
+                Status = "Устанавливаю ULTRA: Wine на основе CrossOver и Direct3D→Metal (один раз, около 260 МБ)…";
                 await PrimeGraphics.InstallAsync(new Progress<WineProgress>(p => Status = p.Stage + (p.Fraction < 1 ? $" {p.Fraction * 100:0}%" : "")));
-                Status = "Режим «Максимум» установлен.";
+                Status = "ULTRA установлен.";
             }
             var updated = await _services.SetPrimeOptionsAsync(e.Id, mode, metalFx ?? e.MetalFxUpscale, fpsLimit ?? e.FpsLimit, showFps ?? e.ShowFps);
             await ReplaceEntryAsync(updated);
@@ -307,7 +315,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string CacheDirectory => RuntimeCatalog.CacheDirectory;
     public string PlatformLabel => "macOS · " + (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "Apple Silicon" : "Intel / x64");
     public static string AppVersion => typeof(MainViewModel).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "";
-    public string RailVersion => "Launcher " + AppVersion + " для Mac";
+    public string RailVersion => "DUSTORE LAUNCHER V " + AppVersion + " · " + Edition.Name;
+    public string FreeQuotaLine => Edition.IsPrime ? "" : $"Осталось сегодня: {Math.Max(0, ExDailyQuota.FreePerDay - ExDailyQuota.UsedToday(DataDirectory))} из {ExDailyQuota.FreePerDay} переносов eX · 2 МБ/с · очередь 15 с";
 
     // Sections. Web sections share one in-app WKWebView.
     public string Section
@@ -751,7 +760,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var started = System.Diagnostics.Stopwatch.StartNew();
             var result = await _services.ConvertAsync(request, new Progress<string>(AppendLog), ct);
             await HoldFreeExPaceAsync(request.InputPath, started, ct);
-            ExDailyQuota.RecordSuccess(DataDirectory);
+            ExDailyQuota.RecordSuccess(DataDirectory); Notify(nameof(FreeQuotaLine));
             ResultPath = result.OutputPath;
             foreach (string warning in result.Warnings) AppendLog(warning);
             if (request.Target == TargetPlatform.MacOS)

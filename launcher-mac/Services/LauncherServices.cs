@@ -160,15 +160,16 @@ public sealed class LauncherServices
         if (app is null || !Directory.Exists(app)) throw new InvalidOperationException("Сначала создайте macOS-версию в eX или добавьте готовое приложение .app.");
         var engine = GameLaunchOptions.DetectEngine(app);
         bool ultra = Edition.IsPrime && entry.Ultra;
-        var arguments = ultra && engine != GameEngineKind.Other ? UltraMode.Arguments(engine)
-            : GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
+        // ULTRA keeps the player's window and resolution; it only lifts the frame cap.
+        var arguments = GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
+        if (ultra) arguments = arguments.Concat(UltraMode.Arguments(engine)).ToArray();
         bool wine = WineRuntime.IsWineWrapper(app);
         if (wine && engine == GameEngineKind.Godot) arguments = arguments.Concat(GameLaunchOptions.WineGodotRenderer).ToArray();
-        // DXMT draws black on Intel graphics: the Metal route is Apple-silicon only.
-        if (wine && Edition.IsPrime && entry.GraphicsMode == "metal" && UltraMode.AppleSilicon)
+        // ULTRA on Apple silicon: Direct3D straight to Metal on the CrossOver-based Wine.
+        // (DXMT draws black on Intel graphics, so Intel Macs stay on DXVK.)
+        if (wine && ultra && UltraMode.UsesMetal)
         {
-            // Prime maximum performance: Direct3D straight to Metal on the CrossOver-based Wine.
-            if (!PrimeGraphics.IsInstalled) throw new InvalidOperationException("Режим «Максимум» ещё не установлен.");
+            if (!PrimeGraphics.IsInstalled) throw new InvalidOperationException("ULTRA ещё устанавливается: дождитесь конца загрузки и запустите снова.");
             await PrimeGraphics.LaunchAsync(app, entry, arguments, cancellation).ConfigureAwait(false);
         }
         else
@@ -180,8 +181,8 @@ public sealed class LauncherServices
             if (Edition.IsPrime)
             {
                 if (entry.ShowFps) environment["MTL_HUD_ENABLED"] = "1";
-                if (wine && entry.FpsLimit is int limit and > 0) environment["DXVK_FRAME_RATE"] = limit.ToString();
                 if (wine && ultra) UltraMode.AddDxvk(environment, DataDirectory);
+                else if (wine && entry.FpsLimit is int limit and > 0) environment["DXVK_FRAME_RATE"] = limit.ToString();
             }
             await _platform.OpenAppAsync(app, arguments, environment, cancellation).ConfigureAwait(false);
         }

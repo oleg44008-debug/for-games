@@ -155,12 +155,7 @@ public static class PrimeGraphics
             ["WINEPREFIX"] = prefix, ["WINEDEBUG"] = "-all", ["WINEDLLOVERRIDES"] = "mscoree,mshtml=", ["WINEESYNC"] = "1", ["WINEMSYNC"] = "1"
         };
         var config = new List<string>();
-        if (entry.Ultra) UltraMode.AddMetal(env, config);
-        else if (entry.MetalFxUpscale)
-        {
-            env["DXMT_METALFX_SPATIAL_SWAPCHAIN"] = "1";
-            config.Add("d3d11.metalSpatialUpscaleFactor=2.0");
-        }
+        UltraMode.AddMetal(env, config);
         if (entry.FpsLimit is int limit and > 0 && !entry.Ultra) config.Add("d3d11.preferredMaxFrameRate=" + limit);
         if (config.Count > 0) env["DXMT_CONFIG"] = string.Join(";", config) + ";";
         if (entry.ShowFps) env["MTL_HUD_ENABLED"] = "1";

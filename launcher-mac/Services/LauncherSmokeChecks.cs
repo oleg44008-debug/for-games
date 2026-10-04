@@ -65,23 +65,20 @@ public static class LauncherSmokeChecks
                 TrustedClock.ServerOverride = null;
                 Directory.Delete(quotaDir, true);
             }
-            UltraMode.Display = (1440, 900);
-            var (ultraW, ultraH) = UltraMode.RenderSize();
-            var ultraUnity = UltraMode.Arguments(GameEngineKind.Unity);
-            Check(ultraW < 1440 && ultraH < 900 && ultraW % 2 == 0 && ultraUnity.Contains("-screen-width") && ultraUnity.Contains(ultraW.ToString()) && ultraUnity.Contains("-nolog"),
-                "ULTRA renders Unity below the display resolution");
-            Check(UltraMode.Arguments(GameEngineKind.Godot).Contains("--disable-vsync"), "ULTRA lifts the Godot vsync cap");
+            Check(UltraMode.Arguments(GameEngineKind.Unity).Count == 0 && UltraMode.Arguments(GameEngineKind.Godot).SequenceEqual(new[] { "--disable-vsync" }),
+                "ULTRA keeps the game's resolution and quality and only lifts the frame cap");
             string ultraDir = Path.Combine(Path.GetTempPath(), "dustore-ultra-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(ultraDir);
             var ultraEnv = new Dictionary<string, string>();
             UltraMode.AddDxvk(ultraEnv, ultraDir);
             string dxvkConf = File.ReadAllText(ultraEnv["DXVK_CONFIG_FILE"]);
-            Check(dxvkConf.Contains("dxgi.syncInterval = 0") && dxvkConf.Contains("d3d11.relaxedBarriers = True") && ultraEnv["WINEDEBUG"] == "-all"
-                && ultraEnv["ROSETTA_ADVERTISE_AVX"] == "1" && ultraEnv["MVK_CONFIG_FAST_MATH_ENABLED"] == "1", "ULTRA DXVK route drops vsync and safety work");
+            Check(dxvkConf.Contains("dxgi.syncInterval = 0") && !dxvkConf.Contains("samplerAnisotropy") && !dxvkConf.Contains("relaxedBarriers")
+                && ultraEnv["DXVK_STATE_CACHE"] == "1" && Directory.Exists(ultraEnv["DXVK_STATE_CACHE_PATH"]) && ultraEnv["WINEDEBUG"] == "-all",
+                "ULTRA DXVK route is uncapped with a persistent shader cache and no image-quality cuts");
             var metalEnv = new Dictionary<string, string>(); var metalConfig = new List<string>();
             UltraMode.AddMetal(metalEnv, metalConfig);
-            Check(metalConfig.Contains("d3d11.preferredMaxFrameRate=120") && (!UltraMode.AppleSilicon || metalEnv.ContainsKey("DXMT_METALFX_SPATIAL_SWAPCHAIN")),
-                "ULTRA Metal route allows 120 FPS and MetalFX on Apple silicon");
+            Check(metalConfig.Contains("d3d11.preferredMaxFrameRate=120") && !metalEnv.ContainsKey("DXMT_METALFX_SPATIAL_SWAPCHAIN") && !metalConfig.Any(c => c.Contains("Upscale")),
+                "ULTRA Metal route renders at native resolution without upscaling");
             Directory.Delete(ultraDir, true);
             Check(!Directory.Exists(emptyProfile), "service construction performs no profile filesystem writes before the GUI");
             Check((await emptyService.LoadLibraryAsync(cancellation).ConfigureAwait(false)).Count == 0

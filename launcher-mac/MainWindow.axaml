@@ -85,7 +85,8 @@
             <StackPanel Spacing="3">
               <TextBlock FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Orchid}" Text="DUSTORE Prime" />
               <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"
-                         Text="Максимум FPS через Metal, eX без лимита (во Free — 3 переноса в день и 4 МБ/с), темы и свой лаунчер." />
+                         Text="ULTRA — больше кадров без понижения графики, eX без лимита и очереди, темы и свой лаунчер." />
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Text="{Binding FreeQuotaLine}" />
             </StackPanel>
           </Border>
           <Border Background="{DynamicResource Fill}" CornerRadius="10" Padding="12,9" IsVisible="{Binding IsPrime}">
@@ -193,7 +194,7 @@
                     </Button>
                   </StackPanel>
                   <TextBlock Classes="secondary" FontSize="12" Text="{Binding LaunchNote}" IsVisible="{Binding HasLaunchNote}" TextWrapping="Wrap" />
-                  <!-- Performance (Prime): graphics path, MetalFX, FPS cap and counter. -->
+                  <!-- Performance (Prime): ULTRA, FPS cap and counter, own cover. -->
                   <Border Background="{DynamicResource Fill}" CornerRadius="12" Padding="14,10" IsVisible="{Binding SelectedShowsPerformance}">
                     <StackPanel Spacing="8">
                       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -204,20 +205,15 @@
                       </StackPanel>
                       <WrapPanel IsEnabled="{Binding IsPrime}">
                         <ToggleButton Classes="ultra" IsChecked="{Binding SelectedUltra, Mode=TwoWay}" Margin="0,0,10,6"
-                                      ToolTip.Tip="Всё, что даёт кадры, разом: меньше пикселей, без вертикальной синхронизации, до 120 FPS">
+                                      ToolTip.Tip="Больше кадров без понижения графики: самый короткий путь до видеокарты, без ограничителя кадров, кэш шейдеров">
                           <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="ULTRA" FontWeight="Black" />
-                            <TextBlock Text="максимум кадров" Opacity="0.75" />
+                            <TextBlock Text="все ресурсы — игре" Opacity="0.75" />
                           </StackPanel>
                         </ToggleButton>
-                        <ComboBox ItemsSource="{Binding GraphicsModes}" SelectedItem="{Binding SelectedGraphicsMode, Mode=TwoWay}" MinWidth="190" Margin="0,0,10,6"
-                                  IsVisible="{Binding SelectedIsWineGame}" ToolTip.Tip="Как переводить графику Windows-игры">
-                          <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
-                        </ComboBox>
                         <ComboBox ItemsSource="{Binding FpsLimits}" SelectedItem="{Binding SelectedFpsLimit, Mode=TwoWay}" MinWidth="190" Margin="0,0,10,6" IsEnabled="{Binding !SelectedUltra}">
                           <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
                         </ComboBox>
-                        <CheckBox Content="MetalFX-апскейлинг" IsChecked="{Binding SelectedMetalFx, Mode=TwoWay}" IsVisible="{Binding SelectedMetalMode}" IsEnabled="{Binding !SelectedUltra}" Margin="0,0,14,6" />
                         <CheckBox Content="Счётчик FPS" IsChecked="{Binding SelectedShowFps, Mode=TwoWay}" Margin="0,0,14,6" />
                         <Button Classes="pill" Content="Своя обложка…" Command="{Binding PickCoverCommand}" Margin="0,0,0,6" />
                       </WrapPanel>
@@ -555,7 +551,7 @@
           <Border Classes="card">
             <StackPanel Spacing="10">
               <TextBlock FontSize="16" FontWeight="SemiBold" Text="Wine для Windows-игр" />
-              <TextBlock Classes="secondary" Text="Windows-игры, перенесённые через eX (в том числе на Unity), запускаются на Mac через Wine. Лаунчер скачивает Wine 11.0 и DXVK (графика Direct3D 11 через Metal — нужна Unity-играм) со страниц сборок Gcenx на GitHub, сверяет контрольные суммы и ставит их в свою папку — без прав администратора." TextWrapping="Wrap" />
+              <TextBlock Classes="secondary" Text="Windows-игры, перенесённые через eX (Unity, Godot и другие), запускаются на Mac через Wine. Лаунчер сам скачивает Wine 11.0 и DXVK (Direct3D 11 через Vulkan и MoltenVK) со страниц сборок Gcenx на GitHub, сверяет контрольные суммы и ставит их в свою папку — без прав администратора." TextWrapping="Wrap" />
               <TextBlock Text="{Binding WineStatus}" TextWrapping="Wrap" FontSize="13" />
               <ProgressBar Value="{Binding WineProgress}" Maximum="100" Height="4" MinHeight="4" IsVisible="{Binding WineInstalling}" />
               <StackPanel Orientation="Horizontal" Spacing="10">
@@ -573,8 +569,8 @@
           <Border Classes="card">
             <StackPanel Spacing="10">
               <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding RailVersion}" />
-              <TextBlock Classes="secondary" Text="Нативная библиотека Mac и перенос Windows ↔ macOS через eX. Поддержка переноса зависит от движка и платформенных зависимостей конкретной игры." TextWrapping="Wrap" />
-              <TextBlock Classes="dim" FontSize="12" Text="APK-конвертация и функции Windows-устройств в эту версию Mac не включены." TextWrapping="Wrap" />
+              <TextBlock Classes="secondary" Text="Библиотека игр Mac, магазин Dustore и перенос игр Windows ↔ macOS через eX. Запуск по умолчанию — на весь экран; режим окна и разрешение меняются у каждой игры." TextWrapping="Wrap" />
+              <TextBlock Classes="dim" FontSize="12" Text="Перенос на Android и функции для телефона и шлема — в версии для Windows." TextWrapping="Wrap" />
             </StackPanel>
           </Border>
         </StackPanel>
