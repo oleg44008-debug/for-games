@@ -84,8 +84,8 @@ jobs:
           WEB=$(dirname "$(find "$DATA/Documents/Games" -name index.wasm | head -1)")
           echo "web build: $WEB"; ls -la "$WEB"
           (cd "$WEB" && python3 -m http.server 8765 >/dev/null 2>&1 &)
-          python3 -m pip install --quiet playwright && python3 -m playwright install webkit chromium >/dev/null
-          python3 - <<'EOF'
+          python3 -m venv "$RUNNER_TEMP/pw" && "$RUNNER_TEMP/pw/bin/pip" install --quiet playwright && "$RUNNER_TEMP/pw/bin/python" -m playwright install webkit chromium >/dev/null
+          "$RUNNER_TEMP/pw/bin/python" - <<'EOF'
           import asyncio
           from playwright.async_api import async_playwright
           async def shoot(browser_type, name):
