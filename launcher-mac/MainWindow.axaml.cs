@@ -8,8 +8,10 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DustoreLauncherV.Mac.Controls;
+using DustoreLauncherV.Mac.Services;
 using DustoreLauncherV.Mac.ViewModels;
 
 namespace DustoreLauncherV.Mac;
@@ -60,6 +62,8 @@ public partial class MainWindow : Window
             ViewModel.Section = Program.StartSection!;
             ShowWebSection();
         }
+        // ULTRA: the launcher goes to the Dock so the game gets the GPU it was drawing with.
+        ViewModel.YieldToGameRequested += (_, _) => Dispatcher.UIThread.Post(() => WindowState = WindowState.Minimized);
         ViewModel.CoverPickRequested += async (_, _) =>
         {
             if (!StorageProvider.CanOpen) return;
@@ -133,6 +137,8 @@ public partial class MainWindow : Window
 
     private async void OnOpened(object? sender, EventArgs args)
     {
+        if (Screens.Primary is { } screen)
+            UltraMode.Display = ((int)(screen.Bounds.Width / screen.Scaling), (int)(screen.Bounds.Height / screen.Scaling));
         if (!Program.UiSmoke && MainViewModel.PrimeIntroWanted(ViewModel.DataDirectory)) _ = IntroMotion.PlayAsync(this);
         try
         {

@@ -159,7 +159,9 @@ public sealed class LauncherServices
         if (app is null && Directory.Exists(entry.SourcePath) && entry.SourcePath.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) app = entry.SourcePath;
         if (app is null || !Directory.Exists(app)) throw new InvalidOperationException("Сначала создайте macOS-версию в eX или добавьте готовое приложение .app.");
         var engine = GameLaunchOptions.DetectEngine(app);
-        var arguments = GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
+        bool ultra = Edition.IsPrime && entry.Ultra;
+        var arguments = ultra && engine != GameEngineKind.Other ? UltraMode.Arguments(engine)
+            : GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
         bool wine = WineRuntime.IsWineWrapper(app);
         if (wine && Edition.IsPrime && entry.GraphicsMode == "metal")
         {
@@ -174,6 +176,7 @@ public sealed class LauncherServices
             {
                 if (entry.ShowFps) environment["MTL_HUD_ENABLED"] = "1";
                 if (wine && entry.FpsLimit is int limit and > 0) environment["DXVK_FRAME_RATE"] = limit.ToString();
+                if (wine && ultra) UltraMode.AddDxvk(environment, DataDirectory);
             }
             await _platform.OpenAppAsync(app, arguments, environment, cancellation).ConfigureAwait(false);
         }
@@ -182,6 +185,9 @@ public sealed class LauncherServices
 
     public Task<GameEntry> SetPrimeOptionsAsync(Guid id, string graphics, bool metalFx, int? fpsLimit, bool showFps, CancellationToken cancellation = default)
         => UpdateEntryAsync(id, e => e with { GraphicsMode = graphics, MetalFxUpscale = metalFx, FpsLimit = fpsLimit, ShowFps = showFps }, cancellation);
+
+    public Task<GameEntry> SetUltraAsync(Guid id, bool ultra, CancellationToken cancellation = default)
+        => UpdateEntryAsync(id, e => e with { Ultra = ultra }, cancellation);
 
     public Task<GameEntry> SetCustomCoverAsync(Guid id, string? path, CancellationToken cancellation = default)
         => UpdateEntryAsync(id, e => e with { CustomCoverPath = path }, cancellation);

@@ -11,7 +11,9 @@ public static class Edition
     public static string Name => IsPrime ? "Prime" : "Free";
 
     /// <summary>Free converts at a capped pace; Prime has no limit.</summary>
-    public const long FreeExBytesPerSecond = 4L * 1024 * 1024;
+    public const long FreeExBytesPerSecond = 2L * 1024 * 1024;
+    /// <summary>Free waits this long before each eX transfer; Prime starts at once.</summary>
+    public const int FreeQueueSeconds = 15;
 }
 
 /// <summary>

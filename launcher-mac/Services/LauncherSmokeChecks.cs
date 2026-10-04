@@ -31,6 +31,24 @@ public static class LauncherSmokeChecks
             var unityWindowed = GameLaunchOptions.Arguments(GameEngineKind.Unity, null, null, null);
             Check(unityWindowed.SequenceEqual(new[] { "-screen-fullscreen", "0", "-window-mode", "windowed", "-screen-width", "1280", "-screen-height", "720" }), "Unity games open in a 1280x720 window by default instead of the display's full size");
             Check(GameLaunchOptions.Arguments(GameEngineKind.Godot, GameLaunchOptions.Fullscreen, 1600, 900).SequenceEqual(new[] { "--fullscreen", "--resolution", "1600x900" }) && GameLaunchOptions.Arguments(GameEngineKind.Unity, GameLaunchOptions.GameDefault, 1600, 900).Count == 0, "Godot and game-default window options map to the right command line");
+            UltraMode.Display = (1440, 900);
+            var (ultraW, ultraH) = UltraMode.RenderSize();
+            var ultraUnity = UltraMode.Arguments(GameEngineKind.Unity);
+            Check(ultraW < 1440 && ultraH < 900 && ultraW % 2 == 0 && ultraUnity.Contains("-screen-width") && ultraUnity.Contains(ultraW.ToString()) && ultraUnity.Contains("-nolog"),
+                "ULTRA renders Unity below the display resolution");
+            Check(UltraMode.Arguments(GameEngineKind.Godot).Contains("--disable-vsync"), "ULTRA lifts the Godot vsync cap");
+            string ultraDir = Path.Combine(Path.GetTempPath(), "dustore-ultra-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(ultraDir);
+            var ultraEnv = new Dictionary<string, string>();
+            UltraMode.AddDxvk(ultraEnv, ultraDir);
+            string dxvkConf = File.ReadAllText(ultraEnv["DXVK_CONFIG_FILE"]);
+            Check(dxvkConf.Contains("dxgi.syncInterval = 0") && dxvkConf.Contains("d3d11.relaxedBarriers = True") && ultraEnv["WINEDEBUG"] == "-all"
+                && ultraEnv["ROSETTA_ADVERTISE_AVX"] == "1" && ultraEnv["MVK_CONFIG_FAST_MATH_ENABLED"] == "1", "ULTRA DXVK route drops vsync and safety work");
+            var metalEnv = new Dictionary<string, string>(); var metalConfig = new List<string>();
+            UltraMode.AddMetal(metalEnv, metalConfig);
+            Check(metalConfig.Contains("d3d11.preferredMaxFrameRate=120") && (!UltraMode.AppleSilicon || metalEnv.ContainsKey("DXMT_METALFX_SPATIAL_SWAPCHAIN")),
+                "ULTRA Metal route allows 120 FPS and MetalFX on Apple silicon");
+            Directory.Delete(ultraDir, true);
             Check(!Directory.Exists(emptyProfile), "service construction performs no profile filesystem writes before the GUI");
             Check((await emptyService.LoadLibraryAsync(cancellation).ConfigureAwait(false)).Count == 0
                 && Directory.Exists(emptyProfile), "an empty profile is created and loaded during async initialization");

@@ -165,6 +165,22 @@
     </Style>
     <Style Selector="Button.outline Path.icon"><Setter Property="Stroke" Value="{DynamicResource Accent}" /></Style>
     <Style Selector="Button.pill"><Setter Property="CornerRadius" Value="18" /></Style>
+    <!-- Prime ULTRA: a flat accent capsule; filled when on. No glow. -->
+    <Style Selector="ToggleButton.ultra">
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+      <Setter Property="Foreground" Value="{DynamicResource Orchid}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Orchid}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ToggleButton.ultra:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Orchid}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="ToggleButton.ultra:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource Orchid}" />
+    </Style>
     <Style Selector="Button.ghost">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />

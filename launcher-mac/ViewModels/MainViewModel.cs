@@ -191,8 +191,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool SelectedMetalFx { get => SelectedGame?.Entry.MetalFxUpscale == true; set => _ = SavePrimeOptionsAsync(null, value, null, null); }
     public bool SelectedShowFps { get => SelectedGame?.Entry.ShowFps == true; set => _ = SavePrimeOptionsAsync(null, null, null, value); }
     public bool SelectedMetalMode => SelectedGame?.Entry.GraphicsMode == "metal";
+    public bool SelectedUltra
+    {
+        get => Edition.IsPrime && SelectedGame?.Entry.Ultra == true;
+        set => _ = SaveUltraAsync(value);
+    }
+    /// <summary>Raised when a game starts in ULTRA: the window goes to the Dock and stops drawing.</summary>
+    public event EventHandler? YieldToGameRequested;
+
+    private async Task SaveUltraAsync(bool ultra)
+    {
+        if (SelectedGame is null || !Edition.IsPrime) return;
+        try { await ReplaceEntryAsync(await _services.SetUltraAsync(SelectedGame.Entry.Id, ultra)); }
+        catch (Exception error) { ReportError(error); }
+        foreach (string property in new[] { nameof(SelectedUltra), nameof(PerformanceNote) }) Notify(property);
+    }
     public string PerformanceNote => !Edition.IsPrime
-        ? "Режим «Максимум» (Direct3D прямо в Metal + апскейлинг MetalFX), счётчик и ограничение FPS — в Prime."
+        ? "ULTRA, режим «Максимум» (Direct3D прямо в Metal + апскейлинг MetalFX), счётчик и ограничение FPS — в Prime."
+        : SelectedUltra ? (UltraMode.AppleSilicon
+            ? "ULTRA: игра рисует вдвое меньше пикселей, MetalFX возвращает чёткость; без вертикальной синхронизации и до 120 кадров. Лаунчер уходит в Dock. Картинка может стать мягче, возможны разрывы кадра."
+            : "ULTRA: игра идёт на ¾ разрешения экрана, без вертикальной синхронизации и без анизотропной фильтрации; лаунчер уходит в Dock. На встроенной графике Intel это главный прирост кадров.")
         : SelectedMetalMode ? "Максимум: Direct3D идёт прямо в Metal (DXMT), без промежуточного Vulkan. Если игра не запускается — верните «Стандарт»."
         : "Стандарт: DXVK через MoltenVK. Для большего FPS выберите «Максимум».";
     public ICommand PickCoverCommand => new RelayCommand(() => CoverPickRequested?.Invoke(this, EventArgs.Empty), () => Edition.IsPrime);
@@ -228,7 +246,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             await ReplaceEntryAsync(updated);
         }
         catch (Exception error) { ReportError(error); }
-        foreach (string property in new[] { nameof(SelectedGraphicsMode), nameof(SelectedFpsLimit), nameof(SelectedMetalFx), nameof(SelectedShowFps), nameof(SelectedMetalMode), nameof(PerformanceNote) })
+        foreach (string property in new[] { nameof(SelectedGraphicsMode), nameof(SelectedFpsLimit), nameof(SelectedMetalFx), nameof(SelectedShowFps), nameof(SelectedMetalMode), nameof(SelectedUltra), nameof(PerformanceNote) })
             Notify(property);
     }
 
@@ -403,7 +421,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         while (started.Elapsed < target)
         {
             double done = started.Elapsed.TotalSeconds / target.TotalSeconds;
-            Status = $"Free: eX переносит не быстрее 4 МБ/с — {done * 100:0}%. В Prime перенос без ограничений.";
+            Status = $"Free: eX переносит не быстрее 2 МБ/с — {bytes * done / 1048576:0} из {bytes / 1048576.0:0} МБ ({done * 100:0}%). В Prime без ограничений.";
             await Task.Delay(400, ct);
         }
     }
@@ -721,6 +739,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (ExDailyQuota.Refusal(DataDirectory) is { } quota) { Status = quota; return; }
         await PerformAsync("Создаю пакет…", async ct =>
         {
+            for (int left = Edition.FreeQueueSeconds; !Edition.IsPrime && left > 0; left--)
+            {
+                Status = $"Очередь Free: перенос начнётся через {left} с. В Prime — сразу и без очереди.";
+                await Task.Delay(1000, ct);
+            }
             var request = new ConversionRequest(SourcePath, SelectedTarget.Platform, GameName.Trim(), OutputPath,
                 string.IsNullOrWhiteSpace(RuntimeVersion) ? null : RuntimeVersion.Trim(), EffectiveArchitecture,
                 string.IsNullOrWhiteSpace(RuntimePath) ? null : RuntimePath.Trim(), _plan.Method);
@@ -764,6 +787,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         await PerformAsync("Запускаю игру…", async ct =>
         {
             await _services.LaunchAsync(entry, ct);
+            if (Edition.IsPrime && entry.Ultra) YieldToGameRequested?.Invoke(this, EventArgs.Empty);
             launched = true;
             await ReloadLibraryAsync(ct, entry.Id);
             Status = "Игра передана macOS для запуска.";
@@ -850,7 +874,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             nameof(SelectedLaunching), nameof(PlayLabel), nameof(LaunchNote), nameof(HasLaunchNote),
             nameof(SelectedHasWindowOptions), nameof(SelectedCanStop), nameof(SelectedWindowMode), nameof(SelectedResolution), nameof(SelectedResolutionMatters),
             nameof(SelectedIsWineGame), nameof(SelectedShowsPerformance), nameof(SelectedGraphicsMode), nameof(SelectedFpsLimit), nameof(SelectedMetalFx),
-            nameof(SelectedShowFps), nameof(SelectedMetalMode), nameof(PerformanceNote) })
+            nameof(SelectedShowFps), nameof(SelectedMetalMode), nameof(SelectedUltra), nameof(PerformanceNote) })
             Notify(property);
     }
 

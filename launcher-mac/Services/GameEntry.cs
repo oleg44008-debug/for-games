@@ -17,7 +17,8 @@ public sealed record GameEntry(
     bool MetalFxUpscale = false,
     int? FpsLimit = null,
     bool ShowFps = false,
-    string? CustomCoverPath = null)
+    string? CustomCoverPath = null,
+    bool Ultra = false)
 {
     [JsonIgnore]
     public string Kind => Directory.Exists(SourcePath)

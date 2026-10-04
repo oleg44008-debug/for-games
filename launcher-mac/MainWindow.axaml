@@ -203,14 +203,21 @@
                         </Border>
                       </StackPanel>
                       <WrapPanel IsEnabled="{Binding IsPrime}">
+                        <ToggleButton Classes="ultra" IsChecked="{Binding SelectedUltra, Mode=TwoWay}" Margin="0,0,10,6"
+                                      ToolTip.Tip="Всё, что даёт кадры, разом: меньше пикселей, без вертикальной синхронизации, до 120 FPS">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="ULTRA" FontWeight="Black" />
+                            <TextBlock Text="максимум кадров" Opacity="0.75" />
+                          </StackPanel>
+                        </ToggleButton>
                         <ComboBox ItemsSource="{Binding GraphicsModes}" SelectedItem="{Binding SelectedGraphicsMode, Mode=TwoWay}" MinWidth="190" Margin="0,0,10,6"
                                   IsVisible="{Binding SelectedIsWineGame}" ToolTip.Tip="Как переводить графику Windows-игры">
                           <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
                         </ComboBox>
-                        <ComboBox ItemsSource="{Binding FpsLimits}" SelectedItem="{Binding SelectedFpsLimit, Mode=TwoWay}" MinWidth="190" Margin="0,0,10,6">
+                        <ComboBox ItemsSource="{Binding FpsLimits}" SelectedItem="{Binding SelectedFpsLimit, Mode=TwoWay}" MinWidth="190" Margin="0,0,10,6" IsEnabled="{Binding !SelectedUltra}">
                           <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
                         </ComboBox>
-                        <CheckBox Content="MetalFX-апскейлинг" IsChecked="{Binding SelectedMetalFx, Mode=TwoWay}" IsVisible="{Binding SelectedMetalMode}" Margin="0,0,14,6" />
+                        <CheckBox Content="MetalFX-апскейлинг" IsChecked="{Binding SelectedMetalFx, Mode=TwoWay}" IsVisible="{Binding SelectedMetalMode}" IsEnabled="{Binding !SelectedUltra}" Margin="0,0,14,6" />
                         <CheckBox Content="Счётчик FPS" IsChecked="{Binding SelectedShowFps, Mode=TwoWay}" Margin="0,0,14,6" />
                         <Button Classes="pill" Content="Своя обложка…" Command="{Binding PickCoverCommand}" Margin="0,0,0,6" />
                       </WrapPanel>
