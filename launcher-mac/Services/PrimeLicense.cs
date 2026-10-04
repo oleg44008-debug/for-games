@@ -15,7 +15,7 @@ namespace DustoreLauncherV.Mac.Services;
 public static class PrimeLicense
 {
     /// <summary>The Prime product in the Dustore store (game_id). 0 until the product is published.</summary>
-    public const int ProductId = 0;
+    public const int ProductId = 339;
     public static string DownloadUrl => "https://dustore.ru/swad/controllers/download_game.php?game_id=" + ProductId;
     private static readonly TimeSpan Recheck = TimeSpan.FromDays(30);
     private static readonly byte[] Key = Encoding.UTF8.GetBytes("dustore-prime/mac/v1");

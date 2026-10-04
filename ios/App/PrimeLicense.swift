@@ -11,7 +11,7 @@ import WebKit
 /// device's Keychain (never synced or restored to another device) and re-checked monthly.
 enum PrimeLicense {
     /// The Prime product in the Dustore store (game_id). 0 until the product is published.
-    static let productId = 0
+    static let productId = 339
     static let downloadURL = URL(string: "https://dustore.ru/swad/controllers/download_game.php?game_id=\(productId)")!
     private static let account = "prime-license"
     private static let recheck: TimeInterval = 30 * 24 * 3600
