@@ -1,0 +1,27 @@
+name: DUSTORE Windows ULTRA check
+on:
+  push:
+    paths: ["ci/ultra-windows/**", ".github/workflows/windows-ultra.yml"]
+  workflow_dispatch:
+jobs:
+  ultra:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "8.0.x" }
+      - name: Build the ULTRA self-test
+        run: dotnet build ci/ultra-windows/UltraTest.csproj -c Release -o ultra-bin
+      - name: Run ULTRA on a real process and check what it changed and restored
+        shell: pwsh
+        run: |
+          powercfg /list
+          ./ultra-bin/UltraTest.exe ultra-report.txt
+          $code = $LASTEXITCODE
+          Get-Content ultra-report.txt
+          powercfg /getactivescheme
+          exit $code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: windows-ultra-report, path: ultra-report.txt }
