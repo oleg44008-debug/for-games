@@ -108,12 +108,13 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp()
     {
         var builder = AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace();
-        // The launcher draws a small 2D interface. Avoid a native OpenGL driver
-        // initialization on older Intel Macs; game processes keep their own renderer.
+        // Drawn by the GPU through Metal. Software rendering redrew the whole Retina window on the
+        // CPU — blurred shadows and the translucent sidebar included — and the library lagged on
+        // Intel Macs. OpenGL and then software remain as fallbacks (a VM without a GPU, for one).
         if (OperatingSystem.IsMacOS())
             builder.With(new AvaloniaNativePlatformOptions
             {
-                RenderingMode = new[] { AvaloniaNativeRenderingMode.Software }
+                RenderingMode = new[] { AvaloniaNativeRenderingMode.Metal, AvaloniaNativeRenderingMode.OpenGl, AvaloniaNativeRenderingMode.Software }
             });
         return builder;
     }

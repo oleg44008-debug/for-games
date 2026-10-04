@@ -24,12 +24,8 @@ public static class UltraMode
     /// <summary>On Apple silicon ULTRA runs Windows games on the Metal route (DXMT).</summary>
     public static bool UsesMetal => AppleSilicon;
 
-    /// <summary>Engine arguments: only the frame cap is lifted; resolution and quality stay the game's.</summary>
-    public static IReadOnlyList<string> Arguments(GameEngineKind engine) => engine switch
-    {
-        GameEngineKind.Godot => new[] { "--disable-vsync" },
-        _ => Array.Empty<string>()
-    };
+    /// <summary>Engine arguments: none — the game keeps its resolution, quality and frame pacing.</summary>
+    public static IReadOnlyList<string> Arguments(GameEngineKind engine) => Array.Empty<string>();
 
     private static string CacheDirectory(string kind)
     {
@@ -56,15 +52,11 @@ public static class UltraMode
         AddCommon(env);
         string config = Path.Combine(dataDirectory, "dxvk-ultra.conf");
         File.WriteAllText(config, string.Join("\n",
-            "# DUSTORE Prime ULTRA: frames without touching the picture",
-            "dxgi.syncInterval = 0",
-            "dxgi.maxFrameRate = 0",
-            "d3d9.presentInterval = 0",
-            "d3d9.maxFrameRate = 0",
+            "# DUSTORE Prime ULTRA: steady frames, nothing taken away",
+            "# Vertical sync stays: uncapped frames heat a MacBook until it throttles and loses FPS.",
             "dxvk.numCompilerThreads = 0",
             ""));
         env["DXVK_CONFIG_FILE"] = config;
-        env["DXVK_FRAME_RATE"] = "0";
         env["DXVK_STATE_CACHE"] = "1";
         env["DXVK_STATE_CACHE_PATH"] = CacheDirectory("dxvk");
         if (AppleSilicon) env["MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS"] = "0";
@@ -75,6 +67,6 @@ public static class UltraMode
     {
         AddCommon(env);
         env["DXMT_SHADER_CACHE_PATH"] = CacheDirectory("dxmt");
-        dxmtConfig.Add("d3d11.preferredMaxFrameRate=120");
+        // Frame pacing stays the display's own.
     }
 }

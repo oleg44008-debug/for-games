@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using DustoreLauncherV.Mac.Controls;
 using DustoreLauncherV.Mac.Services;
@@ -134,7 +135,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool SelectedLaunching => SelectedGame is not null && _launchingId == SelectedGame.Entry.Id;
     public string PlayLabel => SelectedLaunching ? "Запуск…" : "Играть";
     public string LaunchNote => !SelectedLaunching ? ""
-        : _launchIsWine ? "Windows-игра запускается через Wine. Первый запуск готовит окружение — до пары минут."
+        : _launchIsWine ? "Windows-игра запускается через Wine (первый запуск — до пары минут). Выйти из игры: ⌘Q, или ⌘Tab → «Закрыть игру»."
         : "macOS открывает игру. Первый запуск новой игры занимает несколько секунд.";
     public bool HasLaunchNote => LaunchNote.Length > 0;
 
@@ -845,7 +846,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             try { path = await CoverExtractor.GetCoverAsync(entry, _services.DataDirectory, CancellationToken.None); }
             catch (Exception) { continue; }
             if (path is null) continue;
-            try { _covers[entry.Id] = new Bitmap(path); }
+            try
+            {
+                await using var stream = File.OpenRead(path);
+                _covers[entry.Id] = await Task.Run(() => Bitmap.DecodeToWidth(stream, 400, BitmapInterpolationMode.MediumQuality));
+            }
             catch (Exception) { continue; }
             foreach (var game in Games.Where(g => g.Entry.Id == entry.Id)) game.Cover = _covers[entry.Id];
             if (SelectedGame?.Entry.Id == entry.Id) NotifySelection();

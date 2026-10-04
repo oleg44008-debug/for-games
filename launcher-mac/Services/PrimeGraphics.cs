@@ -119,6 +119,7 @@ public static class PrimeGraphics
             await WineRuntime.RunAsync(WineBinary, new[] { "wineboot", "--init" }, environment, TimeSpan.FromMinutes(10), cancellation);
             await WineRuntime.RunAsync(WineServer, new[] { "-w" }, environment, TimeSpan.FromMinutes(10), cancellation);
         }
+        await GameLaunchOptions.ReleaseDisplayCaptureAsync(WineBinary, prefix, cancellation);
         // DXMT's unix bridge is also looked up from system32 of the prefix.
         string system32 = Path.Combine(prefix, "drive_c", "windows", "system32");
         string bridge = Path.Combine(WineHome, "lib", "wine", "x86_64-windows", "winemetal.dll");

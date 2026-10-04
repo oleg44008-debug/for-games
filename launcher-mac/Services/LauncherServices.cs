@@ -164,6 +164,8 @@ public sealed class LauncherServices
         var arguments = GameLaunchOptions.Arguments(engine, entry.WindowMode, entry.WindowWidth, entry.WindowHeight);
         if (ultra) arguments = arguments.Concat(UltraMode.Arguments(engine)).ToArray();
         bool wine = WineRuntime.IsWineWrapper(app);
+        if (wine && WineRuntime.WineBinary is { } wineBinary && GameLaunchOptions.WinePrefixOf(app) is { } wrapperPrefix)
+            await GameLaunchOptions.ReleaseDisplayCaptureAsync(wineBinary, wrapperPrefix, cancellation).ConfigureAwait(false);
         if (wine && engine == GameEngineKind.Godot) arguments = arguments.Concat(GameLaunchOptions.WineGodotRenderer).ToArray();
         // ULTRA on Apple silicon: Direct3D straight to Metal on the CrossOver-based Wine.
         // (DXMT draws black on Intel graphics, so Intel Macs stay on DXVK.)

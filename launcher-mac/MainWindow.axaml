@@ -231,7 +231,7 @@
                         <ComboBox.ItemTemplate><DataTemplate DataType="vm:ResolutionChoice"><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
                       </ComboBox>
                     </StackPanel>
-                    <Button Classes="pill" Command="{Binding StopGameCommand}" ToolTip.Tip="Закрывает игру, даже если она развернулась на весь экран и не реагирует">
+                    <Button Classes="pill" Command="{Binding StopGameCommand}" ToolTip.Tip="Закрывает игру, даже если она не реагирует. Из полноэкранной игры сюда — ⌘Tab.">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Classes="icon" Data="{StaticResource IconClose}" RenderTransform="scale(0.7)" Width="20" />
                         <TextBlock Text="Закрыть игру" VerticalAlignment="Center" />

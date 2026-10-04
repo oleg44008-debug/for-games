@@ -117,6 +117,31 @@ public static class GameLaunchOptions
         await WineRuntime.RunAsync("/usr/bin/pkill", new[] { "-f", "--", pattern }, null, TimeSpan.FromSeconds(10), cancellation);
     }
 
+    /// <summary>
+    /// Wine on macOS «captures» the display for a fullscreen game: ⌘Tab, the Dock and the launcher
+    /// are unreachable and the game cannot be closed. With the capture off the game is still
+    /// fullscreen, but ⌘Tab, ⌘Q and the Dock work. Written once per prefix.
+    /// </summary>
+    public static async Task ReleaseDisplayCaptureAsync(string wine, string prefix, CancellationToken cancellation)
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+        string marker = Path.Combine(prefix, ".dustore-display-v1");
+        if (File.Exists(marker)) return;
+        try
+        {
+            var env = new Dictionary<string, string> { ["WINEPREFIX"] = prefix, ["WINEDEBUG"] = "-all", ["WINEDLLOVERRIDES"] = "mscoree,mshtml=" };
+            Directory.CreateDirectory(prefix);
+            if (!File.Exists(Path.Combine(prefix, "system.reg")))
+                await WineRuntime.RunAsync(wine, new[] { "wineboot", "--init" }, env, TimeSpan.FromMinutes(5), cancellation);
+            foreach (var (name, value) in new[] { ("CaptureDisplaysForFullscreen", "n"), ("UseFullscreenSpace", "n") })
+                await WineRuntime.RunAsync(wine, new[] { "reg", "add", @"HKCU\Software\Wine\Mac Driver", "/v", name, "/t", "REG_SZ", "/d", value, "/f" }, env, TimeSpan.FromMinutes(2), cancellation);
+            string server = Path.Combine(Path.GetDirectoryName(wine)!, "wineserver");
+            if (File.Exists(server)) await WineRuntime.RunAsync(server, new[] { "-w" }, env, TimeSpan.FromMinutes(2), cancellation);
+            File.WriteAllText(marker, "CaptureDisplaysForFullscreen=n\n");
+        }
+        catch (Exception error) when (error is IOException or TimeoutException or InvalidOperationException) { }
+    }
+
     // The eX wrapper script names its prefix: export WINEPREFIX="$HOME/Library/Application Support/DustoreX/Wine/<id>"
     internal static string? WinePrefixOf(string app)
     {

@@ -30,7 +30,7 @@ internal static class StartupDiagnostics
             State["processId"] = Environment.ProcessId;
             State["architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
             State["operatingSystem"] = RuntimeInformation.OSDescription;
-            State["renderingMode"] = OperatingSystem.IsMacOS() ? "software" : "platform-default";
+            State["renderingMode"] = OperatingSystem.IsMacOS() ? "metal-preferred" : "platform-default";
             State["applicationBaseDirectory"] = AppContext.BaseDirectory;
             State["startedAtUtc"] = DateTimeOffset.UtcNow;
             Save("starting");

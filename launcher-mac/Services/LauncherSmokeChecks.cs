@@ -65,19 +65,19 @@ public static class LauncherSmokeChecks
                 TrustedClock.ServerOverride = null;
                 Directory.Delete(quotaDir, true);
             }
-            Check(UltraMode.Arguments(GameEngineKind.Unity).Count == 0 && UltraMode.Arguments(GameEngineKind.Godot).SequenceEqual(new[] { "--disable-vsync" }),
-                "ULTRA keeps the game's resolution and quality and only lifts the frame cap");
+            Check(UltraMode.Arguments(GameEngineKind.Unity).Count == 0 && UltraMode.Arguments(GameEngineKind.Godot).Count == 0,
+                "ULTRA keeps the game's resolution, quality and frame pacing");
             string ultraDir = Path.Combine(Path.GetTempPath(), "dustore-ultra-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(ultraDir);
             var ultraEnv = new Dictionary<string, string>();
             UltraMode.AddDxvk(ultraEnv, ultraDir);
             string dxvkConf = File.ReadAllText(ultraEnv["DXVK_CONFIG_FILE"]);
-            Check(dxvkConf.Contains("dxgi.syncInterval = 0") && !dxvkConf.Contains("samplerAnisotropy") && !dxvkConf.Contains("relaxedBarriers")
+            Check(!dxvkConf.Contains("syncInterval") && !dxvkConf.Contains("samplerAnisotropy") && !dxvkConf.Contains("relaxedBarriers")
                 && ultraEnv["DXVK_STATE_CACHE"] == "1" && Directory.Exists(ultraEnv["DXVK_STATE_CACHE_PATH"]) && ultraEnv["WINEDEBUG"] == "-all",
                 "ULTRA DXVK route is uncapped with a persistent shader cache and no image-quality cuts");
             var metalEnv = new Dictionary<string, string>(); var metalConfig = new List<string>();
             UltraMode.AddMetal(metalEnv, metalConfig);
-            Check(metalConfig.Contains("d3d11.preferredMaxFrameRate=120") && !metalEnv.ContainsKey("DXMT_METALFX_SPATIAL_SWAPCHAIN") && !metalConfig.Any(c => c.Contains("Upscale")),
+            Check(metalConfig.Count == 0 && !metalEnv.ContainsKey("DXMT_METALFX_SPATIAL_SWAPCHAIN") && !metalConfig.Any(c => c.Contains("Upscale")),
                 "ULTRA Metal route renders at native resolution without upscaling");
             Directory.Delete(ultraDir, true);
             Check(!Directory.Exists(emptyProfile), "service construction performs no profile filesystem writes before the GUI");
